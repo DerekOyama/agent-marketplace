@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
   },
-  outputFileTracingRoot: process.cwd(),
+  outputFileTracingRoot: __dirname,
 };
 
 export default nextConfig;
