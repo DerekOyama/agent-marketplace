@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import Stripe from "stripe";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 // Define schemas inline to avoid import issues
 const CreateTxSchema = z.object({ 
