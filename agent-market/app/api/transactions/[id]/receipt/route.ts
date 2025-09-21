@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../../../../lib/prisma";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log("Receipt endpoint called for transaction:", params.id);
+    const { id } = await params;
+    console.log("Receipt endpoint called for transaction:", id);
     
     const body = await req.json();
     console.log("Receipt request body:", body);
@@ -25,14 +26,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     
     // Find the transaction
     const tx = await prisma.transaction.findUnique({ 
-      where: { id: params.id }
+      where: { id }
     });
     
     if (!tx) {
-      console.log("Transaction not found:", params.id);
+      console.log("Transaction not found:", id);
       return NextResponse.json({ 
         error: "Transaction not found",
-        transaction_id: params.id
+        transaction_id: id
       }, { status: 404 });
     }
     

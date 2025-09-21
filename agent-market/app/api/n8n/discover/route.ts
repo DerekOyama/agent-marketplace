@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
-import { discoverN8nWorkflows } from "@/lib/n8n";
+import { prisma } from "../../../../lib/prisma";
+import { discoverN8nWorkflows } from "../../../../lib/n8n";
 
 export async function POST(req: NextRequest) {
   try {
