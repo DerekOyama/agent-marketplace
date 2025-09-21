@@ -6,19 +6,14 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-  // Optimize for serverless environments
-  ...(process.env.NODE_ENV === 'production' && {
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL + '?connection_limit=1&pool_timeout=0',
-      },
-    },
-  }),
 })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// Ensure clean disconnection in serverless environments
+if (process.env.NODE_ENV === 'production') {
+  // Handle graceful shutdown
+  process.on('beforeExit', async () => {
+    await prisma.$disconnect()
+  })
+}
