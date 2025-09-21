@@ -13,9 +13,9 @@ interface Agent {
   webhookUrl?: string;
   triggerType?: string;
   isActive?: boolean;
-  metadata?: any;
-  pricing?: any;
-  stats?: any;
+  metadata?: Record<string, unknown>;
+  pricing?: Record<string, unknown>;
+  stats?: Record<string, unknown>;
 }
 
 interface AgentCardProps {

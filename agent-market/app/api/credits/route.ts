@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 
 // GET - Get user's current credit balance
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     const userId = "demo-user"; // Using the same demo user system
     

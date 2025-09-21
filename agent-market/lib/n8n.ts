@@ -1,4 +1,4 @@
-import { N8nWorkflow, N8nExecution, N8nAgent } from '@/types/n8n';
+import { N8nWorkflow, N8nExecution, N8nAgent } from '../types/n8n';
 
 export class N8nService {
   private baseUrl: string;
@@ -102,7 +102,7 @@ export class N8nService {
     }
   }
 
-  async executeWorkflow(id: string, inputData?: any): Promise<N8nExecution> {
+  async executeWorkflow(id: string, inputData?: Record<string, unknown>): Promise<N8nExecution> {
     try {
       const response = await this.makeRequest<N8nExecution>('/executions', {
         method: 'POST',

@@ -16,16 +16,16 @@ interface Agent {
   webhookUrl?: string;
   triggerType?: string;
   isActive?: boolean;
-  metadata?: any;
-  pricing?: any;
-  stats?: any;
+  metadata?: Record<string, unknown>;
+  pricing?: Record<string, unknown>;
+  stats?: Record<string, unknown>;
 }
 
 export default function Home() {
   const [log, setLog] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [, setCreditBalance] = useState<number>(0);
   const [creditRefreshTrigger, setCreditRefreshTrigger] = useState<number>(0);
 
   // Fetch agents from the database
@@ -89,7 +89,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  async function post(url: string, body?: any) {
+  async function post(url: string, body?: Record<string, unknown>) {
     setLoading(true);
     try {
       console.log(`Making POST request to: ${url}`, body);

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
 import { N8nService } from "../../../../lib/n8n";
 
 export async function POST(req: NextRequest) {

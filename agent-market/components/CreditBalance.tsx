@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface User {
   id: string;
@@ -20,7 +20,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -41,11 +41,11 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
     } finally {
       setLoading(false);
     }
-  };
+  }, [onBalanceUpdate]);
 
   useEffect(() => {
     fetchBalance();
-  }, []);
+  }, [fetchBalance]);
 
   // Watch for refresh trigger changes
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
         setTimeout(() => setIsUpdating(false), 1000); // Show updating state for 1 second
       });
     }
-  }, [refreshTrigger]);
+  }, [refreshTrigger, fetchBalance]);
 
   const formatBalance = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
