@@ -10,6 +10,7 @@ generator client {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  creditBalanceCents Int      @default(1000) // $10.00 in cents
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   mandates      Mandate[]
@@ -19,9 +20,19 @@ model User {
 model Agent {
   id        String   @id @default(cuid())
   name      String
+  description String?
   quoteUrl  String
   runUrl    String
   token     String
+  type      String   @default("legacy") // "legacy" or "n8n"
+  n8nWorkflowId String?
+  n8nInstanceUrl String?
+  webhookUrl String?
+  triggerType String? // "webhook", "manual", "schedule"
+  isActive  Boolean  @default(true)
+  metadata  Json?
+  pricing   Json?
+  stats     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   transactions Transaction[]

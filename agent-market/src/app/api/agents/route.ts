@@ -6,7 +6,26 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const agents = await prisma.agent.findMany({
-      select: { id: true, name: true, runUrl: true }
+      orderBy: { createdAt: 'desc' }, // Newest first
+      select: { 
+        id: true, 
+        name: true, 
+        description: true,
+        runUrl: true,
+        quoteUrl: true,
+        token: true,
+        type: true,
+        n8nWorkflowId: true,
+        n8nInstanceUrl: true,
+        webhookUrl: true,
+        triggerType: true,
+        isActive: true,
+        metadata: true,
+        pricing: true,
+        stats: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
     return NextResponse.json({ agents }, { status: 200 });
   } catch (e: any) {
