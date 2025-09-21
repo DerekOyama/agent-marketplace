@@ -26,12 +26,12 @@ export async function GET() {
       }
     });
     return NextResponse.json({ agents }, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Database error:", e);
     return NextResponse.json({ 
       agents: [], 
       error: "db_error", 
-      message: String(e?.message || e) 
+      message: String((e as Error)?.message || e) 
     }, { status: 500 });
   }
 }

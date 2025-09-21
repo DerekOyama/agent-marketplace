@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "no_mandate" }, { status: 400 });
     }
     
-    const rules = mandate.rulesJson as any;
+    const rules = mandate.rulesJson as Record<string, unknown>;
     if (amountCents > (rules?.max_amount_cents ?? 0)) {
       return NextResponse.json({ error: "over_cap" }, { status: 403 });
     }

@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     const executionTime = Date.now() - startTime;
     
     // Get current stats
-    const currentStats = (agent.stats as any) || {};
+    const currentStats = (agent.stats as Record<string, unknown>) || {};
     const currentTotal = currentStats.totalExecutions || 0;
     const currentSuccessful = currentStats.successfulExecutions || 0;
     const currentFailed = currentStats.failedExecutions || 0;
