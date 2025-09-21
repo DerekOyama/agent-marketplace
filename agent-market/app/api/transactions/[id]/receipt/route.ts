@@ -83,7 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ 
       error: "Internal server error", 
       message: error instanceof Error ? error.message : String(error),
-      transaction_id: params.id
+      transaction_id: "unknown"
     }, { status: 500 });
   }
 }

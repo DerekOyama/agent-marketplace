@@ -4,11 +4,11 @@ import Stripe from "stripe";
 import { z } from "zod";
 
 // Define schemas inline to avoid import issues
-const CreateTxSchema = z.object({ 
-  agentId: z.string(), 
-  amountCents: z.number().int().positive(), 
-  currency: z.string().default("USD"), 
-  input: z.record(z.any()).optional() 
+const CreateTxSchema = z.object({
+  agentId: z.string(),
+  amountCents: z.number().int().positive(),
+  currency: z.string().default("USD"),
+  input: z.record(z.string(), z.unknown()).optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
     
     const rules = mandate.rulesJson as Record<string, unknown>;
-    if (amountCents > (rules?.max_amount_cents ?? 0)) {
+    if (amountCents > (Number(rules?.max_amount_cents) ?? 0)) {
       return NextResponse.json({ error: "over_cap" }, { status: 403 });
     }
     
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     let stripePi = null;
     if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== "sk_test_yourKeyHere") {
       try {
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
         const pi = await stripe.paymentIntents.create({
           amount: amountCents,
           currency: currency.toLowerCase(),
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         currency, 
         status: "pending", 
         stripePi, 
-        requestJson: parsed.data 
+        requestJson: JSON.parse(JSON.stringify(parsed.data))
       }
     });
     

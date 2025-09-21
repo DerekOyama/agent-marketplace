@@ -93,14 +93,14 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
   const agentPricing = agent.pricing || {};
   
   // Calculate dynamic stats from agent data
-  const totalExecutions = agentStats.totalExecutions || 0;
-  const successfulExecutions = agentStats.successfulExecutions || 0;
-  const failedExecutions = agentStats.failedExecutions || 0;
-  const averageRating = agentStats.averageRating || 0;
-  const totalRatings = agentStats.totalRatings || 0;
-  const uniqueUsers = agentStats.uniqueUsers || 0;
-  const repeatUsers = agentStats.repeatUsers || 0;
-  const uptime = agentStats.uptime || "99.9%";
+  const totalExecutions = Number(agentStats.totalExecutions) || 0;
+  const successfulExecutions = Number(agentStats.successfulExecutions) || 0;
+  const failedExecutions = Number(agentStats.failedExecutions) || 0;
+  const averageRating = Number(agentStats.averageRating) || 0;
+  const totalRatings = Number(agentStats.totalRatings) || 0;
+  const uniqueUsers = Number(agentStats.uniqueUsers) || 0;
+  const repeatUsers = Number(agentStats.repeatUsers) || 0;
+  const uptime = String(agentStats.uptime || "99.9%");
   
   const successRate = totalExecutions > 0 ? Math.round((successfulExecutions / totalExecutions) * 100) : 0;
   const failureRate = totalExecutions > 0 ? Math.round((failedExecutions / totalExecutions) * 100) : 0;
@@ -109,7 +109,7 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
   const stats = isN8nAgent ? {
     price: agentPricing.pricePerExecution ? `$${agentPricing.pricePerExecution} per execution` : "Free",
     successRate: `${successRate}%`,
-    avgDuration: agentStats.averageExecutionTime ? `${Math.round(agentStats.averageExecutionTime)}ms` : "0ms",
+    avgDuration: agentStats.averageExecutionTime ? `${Math.round(Number(agentStats.averageExecutionTime))}ms` : "0ms",
     jobsCompleted: totalExecutions.toString(),
     avgRating: averageRating > 0 ? averageRating.toFixed(1) : "0.0",
     reviewCount: totalRatings.toString(),

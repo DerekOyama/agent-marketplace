@@ -140,13 +140,13 @@ export async function POST(req: NextRequest) {
     
     // Get current stats
     const currentStats = (agent.stats as Record<string, unknown>) || {};
-    const currentTotal = currentStats.totalExecutions || 0;
-    const currentSuccessful = currentStats.successfulExecutions || 0;
-    const currentFailed = currentStats.failedExecutions || 0;
-    const currentAvgTime = currentStats.averageExecutionTime || 0;
-    const currentUniqueUsers = currentStats.uniqueUsers || 0;
-    const currentRepeatUsers = currentStats.repeatUsers || 0;
-    const currentUserSessions = currentStats.userSessions || {};
+    const currentTotal = Number(currentStats.totalExecutions) || 0;
+    const currentSuccessful = Number(currentStats.successfulExecutions) || 0;
+    const currentFailed = Number(currentStats.failedExecutions) || 0;
+    const currentAvgTime = Number(currentStats.averageExecutionTime) || 0;
+    const currentUniqueUsers = Number(currentStats.uniqueUsers) || 0;
+    const currentRepeatUsers = Number(currentStats.repeatUsers) || 0;
+    const currentUserSessions = (currentStats.userSessions as Record<string, unknown>) || {};
     
     // Calculate new average execution time using 95% weighted average
     const newTotal = currentTotal + 1;
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     const newUniqueUsers = isNewUser ? currentUniqueUsers + 1 : currentUniqueUsers;
     
     // Check if this is a repeat user (has executed before)
-    const userExecutionCount = (currentUserSessions[sessionId] || 0) + 1;
+    const userExecutionCount = (Number(currentUserSessions[sessionId]) || 0) + 1;
     const isRepeatUser = userExecutionCount === 2; // Only count when user comes back for the first time
     const newRepeatUsers = isRepeatUser ? currentRepeatUsers + 1 : currentRepeatUsers;
     
@@ -167,12 +167,12 @@ export async function POST(req: NextRequest) {
     const newUserSessions = {
       ...currentUserSessions,
       [sessionId]: userExecutionCount
-    };
+    } as Record<string, number>;
     
     // Calculate new ratings (simulate some users rating)
     const shouldRate = Math.random() < 0.25; // 25% chance of rating
-    let newAverageRating = currentStats.averageRating || 0;
-    let newTotalRatings = currentStats.totalRatings || 0;
+    let newAverageRating = Number(currentStats.averageRating) || 0;
+    let newTotalRatings = Number(currentStats.totalRatings) || 0;
     
     if (shouldRate && response.ok) {
       const rating = 4 + Math.random(); // 4.0-5.0 rating
@@ -181,26 +181,28 @@ export async function POST(req: NextRequest) {
     }
     
     // Update agent stats
+    const updatedStats = {
+      // Preserve all existing stats
+      ...currentStats,
+      // Update calculated fields
+      totalExecutions: newTotal,
+      successfulExecutions: response.ok ? currentSuccessful + 1 : currentSuccessful,
+      failedExecutions: !response.ok ? currentFailed + 1 : currentFailed,
+      averageExecutionTime: newAverageTime,
+      lastExecution: new Date().toISOString(),
+      uniqueUsers: newUniqueUsers,
+      repeatUsers: newRepeatUsers,
+      userSessions: newUserSessions,
+      averageRating: Math.round(newAverageRating * 10) / 10,
+      totalRatings: newTotalRatings,
+      // Update uptime based on success rate
+      uptime: newTotal > 0 ? `${(99.5 + (Math.random() * 0.4)).toFixed(1)}%` : "99.9%"
+    };
+
     await prisma.agent.update({
       where: { id: agentId },
       data: {
-        stats: {
-          // Preserve all existing stats
-          ...currentStats,
-          // Update calculated fields
-          totalExecutions: newTotal,
-          successfulExecutions: response.ok ? currentSuccessful + 1 : currentSuccessful,
-          failedExecutions: !response.ok ? currentFailed + 1 : currentFailed,
-          averageExecutionTime: newAverageTime,
-          lastExecution: new Date().toISOString(),
-          uniqueUsers: newUniqueUsers,
-          repeatUsers: newRepeatUsers,
-          userSessions: newUserSessions,
-          averageRating: Math.round(newAverageRating * 10) / 10,
-          totalRatings: newTotalRatings,
-          // Update uptime based on success rate
-          uptime: newTotal > 0 ? `${(99.5 + (Math.random() * 0.4)).toFixed(1)}%` : "99.9%"
-        }
+        stats: updatedStats
       }
     });
 

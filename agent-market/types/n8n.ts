@@ -52,7 +52,6 @@ export interface N8nWorkflowSettings {
   maxExecutionTimeout?: number;
   saveDataErrorExecution: 'all' | 'none';
   saveDataSuccessExecution: 'all' | 'none';
-  saveManualExecutions: boolean;
   includeInExecutionLog: boolean;
   retryOnFail: boolean;
   maxRetries: number;

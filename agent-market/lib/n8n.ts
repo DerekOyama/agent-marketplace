@@ -30,8 +30,18 @@ export class N8nService {
       try {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
-          ...options.headers,
         };
+        
+        // Add headers from options if provided
+        if (options.headers) {
+          if (options.headers instanceof Headers) {
+            options.headers.forEach((value, key) => {
+              headers[key] = value;
+            });
+          } else {
+            Object.assign(headers, options.headers);
+          }
+        }
         
         // Only add API key header if we have a valid one
         if (this.apiKey && this.apiKey !== 'test' && this.apiKey.trim() !== '') {

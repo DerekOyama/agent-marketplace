@@ -33,7 +33,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/agents");
       const text = await res.text();
-      let data = {};
+      let data: { agents?: Agent[] } = {};
       
       try {
         data = text ? JSON.parse(text) : {};
@@ -101,8 +101,9 @@ export default function Home() {
       
       console.log(`Response status: ${res.status}`);
       let data = {};
+      let text = "";
       try {
-        const text = await res.text();
+        text = await res.text();
         console.log(`Response text:`, text);
         data = text ? JSON.parse(text) : {};
       } catch (parseError) {
@@ -148,13 +149,13 @@ export default function Home() {
           await post("/api/transactions", { agentId, amountCents: 500 });
           break;
         case "dispatch":
-          const tx = await post("/api/transactions", { agentId, amountCents: 500 });
+          const tx = await post("/api/transactions", { agentId, amountCents: 500 }) as { transaction?: { id: string } };
           if (tx?.transaction?.id) {
             await post(`/api/transactions/${tx.transaction.id}/dispatch`);
           }
           break;
         case "receipt":
-          const receiptTx = await post("/api/transactions", { agentId, amountCents: 500 });
+          const receiptTx = await post("/api/transactions", { agentId, amountCents: 500 }) as { transaction?: { id: string } };
           const id = receiptTx?.transaction?.id;
           if (id) {
             await post(`/api/transactions/${id}/receipt`, {
@@ -165,7 +166,20 @@ export default function Home() {
           }
           break;
         case "execute":
-          const executeResult = await post("/api/n8n/execute", { agentId, inputData: { test: true } });
+          const executeResult = await post("/api/n8n/execute", { agentId, inputData: { test: true } }) as { 
+            success?: boolean; 
+            status?: number; 
+            data?: { code?: number; message?: string }; 
+            agentId?: string; 
+            webhookUrl?: string; 
+            creditsDeducted?: number;
+            remainingCredits?: number;
+            error?: string;
+            message?: string;
+            requiredCredits?: number;
+            availableCredits?: number;
+            details?: unknown;
+          };
           
           if (executeResult?.success) {
             // Success case - show execution result with credit info
@@ -249,21 +263,21 @@ export default function Home() {
                   ...agent,
                   stats: {
                     ...agent.stats,
-                    totalExecutions: (agent.stats?.totalExecutions || 0) + 1,
-                    successfulExecutions: (agent.stats?.successfulExecutions || 0) + 1,
+                    totalExecutions: (Number(agent.stats?.totalExecutions) || 0) + 1,
+                    successfulExecutions: (Number(agent.stats?.successfulExecutions) || 0) + 1,
                     averageExecutionTime: Math.round(
-                      (agent.stats?.averageExecutionTime || 1500) * 0.95 + 
+                      (Number(agent.stats?.averageExecutionTime) || 1500) * 0.95 + 
                       (Math.random() * 1000 + 500) * 0.05
                     ), // 95% weighted average with realistic execution time
                     lastExecution: new Date().toISOString(),
                     // Update repeat client rate slightly
-                    uniqueUsers: (agent.stats?.uniqueUsers || 0) + (Math.random() < 0.1 ? 1 : 0), // 10% chance of new user
-                    repeatUsers: (agent.stats?.repeatUsers || 0) + (Math.random() < 0.3 ? 1 : 0), // 30% chance of repeat user
+                    uniqueUsers: (Number(agent.stats?.uniqueUsers) || 0) + (Math.random() < 0.1 ? 1 : 0), // 10% chance of new user
+                    repeatUsers: (Number(agent.stats?.repeatUsers) || 0) + (Math.random() < 0.3 ? 1 : 0), // 30% chance of repeat user
                     // Update rating occasionally
-                    totalRatings: (agent.stats?.totalRatings || 0) + (Math.random() < 0.25 ? 1 : 0), // 25% chance of rating
+                    totalRatings: (Number(agent.stats?.totalRatings) || 0) + (Math.random() < 0.25 ? 1 : 0), // 25% chance of rating
                     averageRating: agent.stats?.totalRatings && Math.random() < 0.25 
-                      ? Math.round(((agent.stats.averageRating || 0) * (agent.stats.totalRatings || 0) + (4 + Math.random())) / ((agent.stats.totalRatings || 0) + 1) * 10) / 10
-                      : (agent.stats?.averageRating || 0)
+                      ? Math.round(((Number(agent.stats.averageRating) || 0) * (Number(agent.stats.totalRatings) || 0) + (4 + Math.random())) / ((Number(agent.stats.totalRatings) || 0) + 1) * 10) / 10
+                      : (Number(agent.stats?.averageRating) || 0)
                   }
                 }
               : agent
@@ -288,8 +302,9 @@ export default function Home() {
       
       console.log(`Response status: ${res.status}`);
       let data = {};
+      let text = "";
       try {
-        const text = await res.text();
+        text = await res.text();
         console.log(`Response text:`, text);
         data = text ? JSON.parse(text) : {};
       } catch (parseError) {
