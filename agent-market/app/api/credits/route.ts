@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../lib/prisma";
 
 // GET - Get user's current credit balance
 export async function GET(req: NextRequest) {
