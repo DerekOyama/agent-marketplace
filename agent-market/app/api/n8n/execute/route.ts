@@ -71,7 +71,13 @@ export async function POST(req: NextRequest) {
 
     // Prepare standardized input
     const standardInput: StandardAgentInput = {
-      data: inputData || { test: true },
+      data: inputData || { 
+        test: true, 
+        text: "Greetings from your first AI agent! This is a test execution from the Agent Marketplace.",
+        message: "Hello, I'm your first automated agent ready to help with tasks!",
+        agentType: "n8n-webhook-agent",
+        status: "active"
+      },
       metadata: {
         requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,

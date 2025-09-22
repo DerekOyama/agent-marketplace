@@ -134,7 +134,16 @@ export default function Home() {
           }
           break;
         case "execute":
-          const executeResult = await post("/api/n8n/execute", { agentId, inputData: { test: true } }) as { 
+          const executeResult = await post("/api/n8n/execute", { 
+            agentId, 
+            inputData: { 
+              test: true, 
+              text: "Greetings from your first AI agent! This is a test execution from the Agent Marketplace.",
+              message: "Hello, I'm your first automated agent ready to help with tasks!",
+              agentType: "n8n-webhook-agent",
+              status: "active"
+            } 
+          }) as { 
             success?: boolean; 
             status?: number; 
             data?: { code?: number; message?: string }; 
