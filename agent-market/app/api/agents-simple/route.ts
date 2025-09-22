@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '../../../lib/prisma';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    console.log('Agents API called');
+    
     const agents = await prisma.agent.findMany({
-      orderBy: { createdAt: 'desc' }, // Newest first
+      orderBy: { createdAt: 'desc' },
       select: { 
         id: true, 
         name: true, 
@@ -28,13 +30,14 @@ export async function GET() {
       }
     });
     
-    return NextResponse.json({ agents }, { status: 200 });
-  } catch (e: unknown) {
-    console.error("Database error:", e);
+    console.log('Found agents:', agents.length);
+    
+    return NextResponse.json({ agents });
+  } catch (error) {
+    console.error('Agents API error:', error);
     return NextResponse.json({ 
-      agents: [], 
-      error: "db_error", 
-      message: String((e as Error)?.message || e) 
+      error: "Database error", 
+      message: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }

@@ -140,6 +140,25 @@ export class ApiWrapper {
    * Create a standardized success response
    */
   static success(data: unknown, statusCode: number = 200, traceId?: string): NextResponse {
+    // For backward compatibility, if data is an object with a single key,
+    // return it directly instead of wrapping in { success: true, data: ... }
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const dataObj = data as Record<string, unknown>;
+      const keys = Object.keys(dataObj);
+      
+      // If it's a simple object with one key (like { agents: [...] }), return it directly
+      if (keys.length === 1) {
+        return NextResponse.json(data, {
+          status: statusCode,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(traceId && { 'X-Trace-ID': traceId })
+          }
+        });
+      }
+    }
+
+    // Otherwise, use the full wrapper format
     const response = {
       success: true,
       data,
