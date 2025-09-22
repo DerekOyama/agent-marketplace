@@ -29,6 +29,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [, setCreditBalance] = useState<number>(0);
   const [creditRefreshTrigger, setCreditRefreshTrigger] = useState<number>(0);
+  const [showDebugMenu, setShowDebugMenu] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
@@ -274,12 +275,12 @@ export default function Home() {
               >
                 Connect N8n Instance
               </Link>
-              <Link 
-                href="/simple" 
+              <button
+                onClick={() => setShowDebugMenu(!showDebugMenu)}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
               >
-                Simple View
-              </Link>
+                {showDebugMenu ? "Hide Debug Menu" : "Debug Menu"}
+              </button>
             </nav>
           </div>
           
@@ -291,43 +292,50 @@ export default function Home() {
             />
           </div>
 
-          {/* Global Actions */}
-          <div className="flex flex-wrap gap-3 justify-center mb-8">
-            <button
-              onClick={() => handleAgentAction("seed", "")}
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              {loading ? "Loading..." : "Seed Agent"}
-            </button>
-            <button
-              onClick={() => handleAgentAction("credits", "")}
-              disabled={loading}
-              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Check Credits
-            </button>
-            <button
-              onClick={() => handleAgentAction("mandate", "")}
-              disabled={loading}
-              className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Create Mandate
-            </button>
-            <button
-              onClick={() => fetchAgents()}
-              disabled={loading}
-              className="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Refresh Agents
-            </button>
-          </div>
+          {/* Debug Menu */}
+          {showDebugMenu && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-amber-200 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Debug Controls</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleAgentAction("seed", "")}
+                    disabled={loading}
+                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {loading ? "Loading..." : "Seed Agent"}
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("credits", "")}
+                    disabled={loading}
+                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Check Credits
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("mandate", "")}
+                    disabled={loading}
+                    className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Create Mandate
+                  </button>
+                  <button
+                    onClick={() => fetchAgents()}
+                    disabled={loading}
+                    className="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Refresh Agents
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Agents Grid */}
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {agents.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8 mb-12">
               {agents.map((agent) => (
                 <AgentCard
                   key={agent.id}
@@ -367,17 +375,19 @@ export default function Home() {
 
         {/* Log Output */}
         {log && (
-          <div className="bg-gray-900 text-green-400 p-6 rounded-lg font-mono text-sm overflow-x-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">API Response Log</h3>
-              <button
-                onClick={() => setLog("")}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-              >
-                Clear
-              </button>
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-gray-900 text-green-400 p-8 rounded-lg font-mono text-sm overflow-x-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold">API Response Log</h3>
+                <button
+                  onClick={() => setLog("")}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium"
+                >
+                  Clear Log
+                </button>
+              </div>
+              <pre className="whitespace-pre-wrap break-words leading-relaxed">{log}</pre>
             </div>
-            <pre className="whitespace-pre-wrap break-words">{log}</pre>
           </div>
         )}
 
