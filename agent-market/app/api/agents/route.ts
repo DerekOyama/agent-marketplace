@@ -21,10 +21,9 @@ export async function GET() {
         metadata: true,
         pricing: true,
         stats: true,
-        inputSchema: true,
-        outputSchema: true,
         createdAt: true,
         updatedAt: true
+        // inputSchema and outputSchema will be added after database migration
       }
     });
     return NextResponse.json({ agents }, { status: 200 });

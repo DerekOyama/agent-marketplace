@@ -35,8 +35,8 @@ export async function POST(_req: NextRequest) {
         webhookUrl: "https://derekoyama.app.n8n.cloud/webhook/test-agent",
         triggerType: "webhook",
         isActive: true,
-        inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.input)),
-        outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.output)),
+        // inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.input)),
+        // outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.output)),
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n", "test"],
@@ -72,8 +72,8 @@ export async function POST(_req: NextRequest) {
         type: "legacy",
         triggerType: "manual",
         isActive: true,
-        inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.input)),
-        outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.output)),
+        // inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.input)),
+        // outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.output)),
         metadata: {
           category: "ai-text",
           tags: ["text", "ai", "nlp", "summarization", "translation"],
@@ -109,8 +109,8 @@ export async function POST(_req: NextRequest) {
         type: "legacy",
         triggerType: "manual",
         isActive: true,
-        inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.input)),
-        outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.output)),
+        // inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.input)),
+        // outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.output)),
         metadata: {
           category: "data-science",
           tags: ["data", "analytics", "statistics", "ml", "predictions"],
@@ -146,8 +146,8 @@ export async function POST(_req: NextRequest) {
         type: "legacy",
         triggerType: "manual",
         isActive: true,
-        inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.input)),
-        outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.output)),
+        // inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.input)),
+        // outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.output)),
         metadata: {
           category: "web-automation",
           tags: ["scraping", "web", "automation", "data-extraction"],
