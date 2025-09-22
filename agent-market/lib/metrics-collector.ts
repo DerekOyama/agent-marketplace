@@ -176,23 +176,67 @@ export class MetricsCollector {
    */
   private async updateAgentStats(agentId: string): Promise<void> {
     try {
-      
-      await prisma.agent.update({
+      // Get current agent data
+      const agent = await prisma.agent.findUnique({
         where: { id: agentId },
-        data: {
-          totalExecutions: { increment: 1 },
-          lastExecutedAt: new Date()
-        }
+        select: { stats: true }
       });
 
-      // Update total users count
+      // Get execution statistics from the database
+      const executionStats = await prisma.agentExecution.aggregate({
+        where: { agentId },
+        _count: { id: true },
+        _avg: { duration: true }
+      });
+
+      const successfulExecutions = await prisma.agentExecution.count({
+        where: { agentId, status: 'success' }
+      });
+
+      const failedExecutions = await prisma.agentExecution.count({
+        where: { agentId, status: { in: ['failed', 'error', 'timeout'] } }
+      });
+
+      // Get user interaction stats
       const uniqueUsers = await prisma.userAgentInteraction.count({
         where: { agentId }
       });
 
+      const repeatUsers = await prisma.userAgentInteraction.count({
+        where: { agentId, totalExecutions: { gt: 1 } }
+      });
+
+      // Get rating stats
+      const ratingStats = await prisma.userAgentInteraction.aggregate({
+        where: { agentId, rating: { not: null } },
+        _avg: { rating: true },
+        _count: { rating: true }
+      });
+
+      // Update agent with computed stats
+      const currentStats = (agent?.stats as Record<string, unknown>) || {};
+      const updatedStats = {
+        ...currentStats,
+        totalExecutions: executionStats._count.id,
+        successfulExecutions,
+        failedExecutions,
+        averageExecutionTime: Math.round(executionStats._avg.duration || 0),
+        uniqueUsers,
+        repeatUsers,
+        averageRating: ratingStats._avg.rating || 0,
+        totalRatings: ratingStats._count.rating,
+        lastUpdated: new Date().toISOString()
+      };
+      
       await prisma.agent.update({
         where: { id: agentId },
-        data: { totalUsers: uniqueUsers }
+        data: {
+          totalExecutions: executionStats._count.id,
+          lastExecutedAt: new Date(),
+          totalUsers: uniqueUsers,
+          avgRating: ratingStats._avg.rating || 0,
+          stats: updatedStats
+        }
       });
 
     } catch (error) {

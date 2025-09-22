@@ -10,9 +10,9 @@ import { ErrorCode } from './error-codes';
 
 export interface RequestLogData {
   traceId: string;
-  method: string;
-  url: string;
-  path: string;
+  method?: string;
+  url?: string;
+  path?: string;
   userAgent?: string;
   ipAddress?: string;
   userId?: string;
@@ -27,6 +27,8 @@ export interface RequestLogData {
   errorCode?: ErrorCode;
   errorMessage?: string;
   timestamp: Date;
+  agentId?: string;
+  executionId?: string;
 }
 
 export class RequestLogger {
@@ -48,9 +50,9 @@ export class RequestLogger {
       await prisma.requestLog.create({
         data: {
           traceId: logData.traceId,
-          method: logData.method,
-          url: logData.url,
-          path: logData.path,
+          method: logData.method || 'UNKNOWN',
+          url: logData.url || '',
+          path: logData.path || '',
           userAgent: sanitizedUserAgent,
           ipAddress: anonymizedIP,
           userId: logData.userId,
@@ -64,7 +66,9 @@ export class RequestLogger {
           duration: logData.duration,
           errorCode: logData.errorCode,
           errorMessage: logData.errorMessage ? this.dataSanitizer.sanitizeError(new Error(logData.errorMessage)).message : null,
-          timestamp: logData.timestamp
+          timestamp: logData.timestamp,
+          agentId: logData.agentId,
+          executionId: logData.executionId
         }
       });
 

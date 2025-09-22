@@ -212,10 +212,16 @@ model RequestLog {
   errorCode      String?
   errorMessage   String?
   timestamp      DateTime  @default(now())
+  
+  // Connect to other tables for better analytics
+  agentId        String?
+  executionId    String?
 
   @@index([traceId])
   @@index([method, path])
   @@index([userId, timestamp])
   @@index([errorCode, timestamp])
   @@index([timestamp])
+  @@index([agentId, timestamp])
+  @@index([executionId])
 }

@@ -47,7 +47,25 @@ export default function Home() {
       }
       
       if (data.agents && data.agents.length > 0) {
-        setAgents(data.agents);
+        // Fetch real-time stats for each agent
+        const agentsWithStats = await Promise.all(
+          data.agents.map(async (agent) => {
+            try {
+              const statsRes = await fetch(`/api/agents/${agent.id}/stats`);
+              if (statsRes.ok) {
+                const statsData = await statsRes.json();
+                return {
+                  ...agent,
+                  stats: statsData.stats
+                };
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch stats for agent ${agent.id}:`, error);
+            }
+            return agent;
+          })
+        );
+        setAgents(agentsWithStats);
       } else {
         setLog("No agents found. Please run the seed script first.");
       }
@@ -59,6 +77,15 @@ export default function Home() {
 
   useEffect(() => {
     fetchAgents();
+  }, [fetchAgents]);
+
+  // Real-time metrics refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAgents();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, [fetchAgents]);
 
   async function post(url: string, body?: Record<string, unknown>) {
@@ -217,34 +244,10 @@ export default function Home() {
           if (executeResult?.success) {
             setCreditRefreshTrigger(prev => prev + 1);
             
-            // Update agent stats optimistically
-            setAgents(prevAgents => 
-              prevAgents.map(agent => 
-                agent.id === agentId 
-                  ? {
-                      ...agent,
-                      stats: {
-                        ...agent.stats,
-                        totalExecutions: (Number(agent.stats?.totalExecutions) || 0) + 1,
-                        successfulExecutions: (Number(agent.stats?.successfulExecutions) || 0) + 1,
-                        averageExecutionTime: Math.round(
-                          (Number(agent.stats?.averageExecutionTime) || 1500) * 0.95 + 
-                          (Math.random() * 1000 + 500) * 0.05
-                        ), // 95% weighted average with realistic execution time
-                        lastExecution: new Date().toISOString(),
-                        // Update repeat client rate slightly
-                        uniqueUsers: (Number(agent.stats?.uniqueUsers) || 0) + (Math.random() < 0.1 ? 1 : 0), // 10% chance of new user
-                        repeatUsers: (Number(agent.stats?.repeatUsers) || 0) + (Math.random() < 0.3 ? 1 : 0), // 30% chance of repeat user
-                        // Update rating occasionally
-                        totalRatings: (Number(agent.stats?.totalRatings) || 0) + (Math.random() < 0.25 ? 1 : 0), // 25% chance of rating
-                        averageRating: agent.stats?.totalRatings && Math.random() < 0.25 
-                          ? Math.round(((Number(agent.stats.averageRating) || 0) * (Number(agent.stats.totalRatings) || 0) + (4 + Math.random())) / ((Number(agent.stats.totalRatings) || 0) + 1) * 10) / 10
-                          : (Number(agent.stats?.averageRating) || 0)
-                      }
-                    }
-                  : agent
-              )
-            );
+            // Refresh real-time stats from the database
+            setTimeout(() => {
+              fetchAgents();
+            }, 1000); // Wait 1 second for database updates to complete
           }
           break;
         default:
