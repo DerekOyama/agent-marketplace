@@ -138,7 +138,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         actor: "marketplace", 
         event: "dispatched", 
         payload: {
-          standardInput,
+          standardInput: JSON.parse(JSON.stringify(standardInput)), // Convert to plain object
           agent_url: tx.agent.runUrl,
           is_demo: isDemoAgent,
           execution_id: executionId
