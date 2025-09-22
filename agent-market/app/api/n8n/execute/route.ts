@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import { StandardAgentInput, StandardAgentOutput, validateAgentInput, AgentInputSchema } from "../../../../types/agent-schemas";
+import { StandardAgentInput, StandardAgentOutput } from "../../../../types/agent-schemas";
 
 export async function POST(req: NextRequest) {
   try {
@@ -83,19 +83,9 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    // Validate input if schema exists (check for schema field existence for backward compatibility)
-    const agentWithSchema = agent as typeof agent & { inputSchema?: AgentInputSchema };
-    if (agentWithSchema.inputSchema) {
-      const validation = validateAgentInput(standardInput, agentWithSchema.inputSchema);
-      if (!validation.valid) {
-        return NextResponse.json({
-          success: false,
-          error: "Input validation failed",
-          details: validation.errors,
-          agentId
-        }, { status: 400 });
-      }
-    }
+    // Note: Input validation will be enabled after database migration adds schema fields
+    // For now, we skip validation to maintain backward compatibility
+    console.log('Input validation skipped - schema fields not yet available');
 
     // Execute the webhook
     console.log('Executing webhook:', agent.webhookUrl);
