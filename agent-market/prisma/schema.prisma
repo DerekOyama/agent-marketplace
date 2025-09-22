@@ -33,8 +33,6 @@ model Agent {
   metadata  Json?
   pricing   Json?
   stats     Json?
-  inputSchema Json?   // JSON schema for input validation
-  outputSchema Json?  // JSON schema for output validation
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   transactions Transaction[]
