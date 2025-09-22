@@ -18,6 +18,8 @@ interface Agent {
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
 }
 
 export default function Home() {

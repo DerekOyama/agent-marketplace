@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AgentRequirementsModal from "./AgentRequirementsModal";
 
 interface Agent {
   id: string;
@@ -16,6 +17,8 @@ interface Agent {
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
 }
 
 interface AgentCardProps {
@@ -27,6 +30,7 @@ interface AgentCardProps {
 
 export default function AgentCard({ agent, onAction, loading, log }: AgentCardProps) {
   const [localLog, setLocalLog] = useState<string>("");
+  const [showRequirements, setShowRequirements] = useState(false);
 
   const handleAction = async (action: string) => {
     setLocalLog("");
@@ -44,6 +48,12 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
       description: "Execute n8n workflow"
     },
     { 
+      name: "View Requirements", 
+      action: "requirements", 
+      color: "bg-indigo-700 hover:bg-indigo-800",
+      description: "View input/output requirements"
+    },
+    { 
       name: "View in N8n", 
       action: "view", 
       color: "bg-purple-700 hover:bg-purple-800",
@@ -56,6 +66,12 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
       description: "Test n8n connection"
     }
   ] : [
+    { 
+      name: "View Requirements", 
+      action: "requirements", 
+      color: "bg-indigo-700 hover:bg-indigo-800",
+      description: "View input/output requirements"
+    },
     { 
       name: "Health Check", 
       action: "health", 
@@ -214,7 +230,7 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
             {actions.map((action) => (
               <button
                 key={action.action}
-                onClick={() => handleAction(action.action)}
+                onClick={() => action.action === 'requirements' ? setShowRequirements(true) : handleAction(action.action)}
                 disabled={loading}
                 className={`px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${action.color} hover:shadow-md`}
                 title={action.description}
@@ -235,6 +251,13 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
           )}
         </div>
       </div>
+
+      {/* Requirements Modal */}
+      <AgentRequirementsModal
+        agentId={agent.id}
+        isOpen={showRequirements}
+        onClose={() => setShowRequirements(false)}
+      />
     </div>
   );
 }

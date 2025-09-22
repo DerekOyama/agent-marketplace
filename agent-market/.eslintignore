@@ -1,0 +1,12 @@
+# Ignore build outputs
+.next/
+dist/
+node_modules/
+
+# Ignore scripts directory (Node.js scripts use require())
+scripts/
+temp/
+
+# Ignore generated files
+*.js
+*.d.ts
