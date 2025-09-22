@@ -166,8 +166,8 @@ export default function Home() {
               response: executeResult.data,
               agentId: executeResult.agentId,
               webhookUrl: executeResult.webhookUrl,
-              creditsDeducted: executeResult.creditsDeducted ? `$${(executeResult.creditsDeducted / 100).toFixed(2)}` : "$0.00",
-              remainingCredits: executeResult.remainingCredits ? `$${(executeResult.remainingCredits / 100).toFixed(2)}` : "$0.00",
+              creditsDeducted: executeResult.usage?.creditsConsumed ? `$${(executeResult.usage.creditsConsumed / 100).toFixed(2)}` : "$0.00",
+              remainingCredits: executeResult.usage?.remainingCredits ? `$${(executeResult.usage.remainingCredits / 100).toFixed(2)}` : "$0.00",
               timestamp: new Date().toISOString()
             }, null, 2));
 
