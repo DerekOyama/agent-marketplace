@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
     // Test connection to n8n instance
     console.log('Testing connection to:', instanceUrl);
     const n8nService = new N8nService(instanceUrl, apiKey);
-    const isConnected = await n8nService.testConnection();
+    const connectionResult = await n8nService.testConnection();
 
-    console.log('Connection test result:', isConnected);
+    console.log('Connection test result:', connectionResult);
 
-    if (!isConnected) {
+    if (!connectionResult.success) {
       return NextResponse.json(
-        { error: "Cannot connect to n8n instance. Please check URL and API key." },
+        { error: connectionResult.error || "Cannot connect to n8n instance. Please check URL and API key." },
         { status: 400 }
       );
     }

@@ -62,11 +62,14 @@ export default function N8nDiscovery() {
 
       if (data.success) {
         setInstance(data.instance);
+        setError(""); // Clear any previous errors
       } else {
         setError(data.error || "Failed to connect to n8n instance");
+        setInstance(null); // Clear instance on error
       }
     } catch (err) {
       setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
+      setInstance(null); // Clear instance on error
     } finally {
       setLoading(false);
     }
@@ -130,6 +133,7 @@ export default function N8nDiscovery() {
       }
     } catch (err) {
       setError("Webhook test failed: " + (err instanceof Error ? err.message : "Unknown error"));
+      setInstance(null); // Clear instance on error
     } finally {
       setLoading(false);
     }
@@ -166,6 +170,7 @@ export default function N8nDiscovery() {
       }
     } catch (err) {
       setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
+      setInstance(null); // Clear instance on error
     } finally {
       setLoading(false);
     }

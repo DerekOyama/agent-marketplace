@@ -163,7 +163,7 @@ export class N8nService {
     }
   }
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
       // Try different endpoints that might work with n8n Cloud
       const endpoints = [
@@ -180,13 +180,13 @@ export class N8nService {
           console.log(`Trying endpoint: ${endpoint}`);
           await this.makeRequest(endpoint);
           console.log(`Success with endpoint: ${endpoint}`);
-          return true;
+          return { success: true };
         } catch (error) {
           console.log(`Failed with endpoint ${endpoint}:`, error);
           // If we get a 401/403, it means the API key is invalid but the connection works
           if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
             console.log('API key authentication failed, but connection successful');
-            return true; // Connection works, just auth failed
+            return { success: true, error: 'Connection successful but API key may be invalid' };
           }
           continue;
         }
@@ -203,13 +203,16 @@ export class N8nService {
       
       if (response.ok) {
         console.log('Base URL test successful');
-        return true;
+        return { success: true };
       }
       
-      return false;
+      return { success: false, error: 'Cannot connect to n8n instance' };
     } catch (error) {
       console.error('N8n connection test failed:', error);
-      return false;
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Connection failed' 
+      };
     }
   }
 
@@ -260,9 +263,9 @@ export async function discoverN8nWorkflows(instanceUrl: string, apiKey: string) 
   
   try {
     // Test connection first
-    const isConnected = await n8nService.testConnection();
-    if (!isConnected) {
-      throw new Error('Cannot connect to n8n instance');
+    const connectionResult = await n8nService.testConnection();
+    if (!connectionResult.success) {
+      throw new Error(connectionResult.error || 'Cannot connect to n8n instance');
     }
 
     // Get all workflows

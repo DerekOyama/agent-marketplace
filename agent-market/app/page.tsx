@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
+import N8nDiscovery from "../components/N8nDiscovery";
 
 interface Agent {
   id: string;
@@ -304,6 +305,9 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* N8n Discovery */}
+        <N8nDiscovery />
 
         {/* Agents Grid */}
         <div className="grid grid-cols-1 gap-6 mb-8">

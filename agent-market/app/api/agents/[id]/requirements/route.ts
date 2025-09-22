@@ -35,7 +35,7 @@ export async function GET(
         webhookUrl: true,
         n8nWorkflowId: true,
         n8nInstanceUrl: true,
-      }
+      } as Prisma.AgentSelect
     });
 
     if (!agent) {
@@ -53,8 +53,8 @@ export async function GET(
     }
 
       // If agent doesn't have schemas, try to infer from type
-      let inputSchema = agent.inputSchema;
-      let outputSchema = agent.outputSchema;
+      let inputSchema = (agent as any).inputSchema;
+      let outputSchema = (agent as any).outputSchema;
 
       if (!inputSchema || !outputSchema) {
         // Try to get default schema based on agent type or metadata
