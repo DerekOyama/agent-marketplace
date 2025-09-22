@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import { StandardAgentInput, StandardAgentOutput, validateAgentInput } from "../../../../types/agent-schemas";
+import { StandardAgentInput, StandardAgentOutput, validateAgentInput, AgentInputSchema } from "../../../../types/agent-schemas";
 
 export async function POST(req: NextRequest) {
   try {
@@ -83,9 +83,10 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    // Validate input if schema exists
-    if (agent.inputSchema) {
-      const validation = validateAgentInput(standardInput, agent.inputSchema as any);
+    // Validate input if schema exists (check for schema field existence for backward compatibility)
+    const agentWithSchema = agent as any; // Temporary cast during migration
+    if (agentWithSchema.inputSchema) {
+      const validation = validateAgentInput(standardInput, agentWithSchema.inputSchema as AgentInputSchema);
       if (!validation.valid) {
         return NextResponse.json({
           success: false,
@@ -317,16 +318,19 @@ export async function POST(req: NextRequest) {
       metadata: {
         ...parsedData.metadata,
         executionId,
-        agentId,
-        webhookUrl: agent.webhookUrl,
-        responseSize: responseData.length,
-        contentType: response.headers.get('content-type') || 'unknown'
+        // Add additional metadata without conflicting with the base interface
+        ...(agentId && { agentId }),
+        ...(agent.webhookUrl && { webhookUrl: agent.webhookUrl }),
+        ...(responseData && { responseSize: responseData.length }),
+        ...(response.headers.get('content-type') && { contentType: response.headers.get('content-type') || 'unknown' })
       },
       usage: {
+        ...(parsedData.usage || {}),
         creditsConsumed: response.ok ? executionCostCents : 0,
-        remainingCredits: updatedUser?.creditBalanceCents || 0,
-        httpStatus: response.status,
-        httpStatusText: response.statusText
+        // Add additional usage info without conflicting with the base interface
+        ...(updatedUser?.creditBalanceCents !== undefined && { remainingCredits: updatedUser.creditBalanceCents }),
+        ...(response.status && { httpStatus: response.status }),
+        ...(response.statusText && { httpStatusText: response.statusText })
       }
     };
 

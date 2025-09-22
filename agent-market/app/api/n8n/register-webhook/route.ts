@@ -29,8 +29,6 @@ export async function POST(req: NextRequest) {
         webhookUrl: webhookUrl,
         triggerType: "webhook",
         isActive: true,
-        inputSchema: CommonAgentSchemas.webhook.input,
-        outputSchema: CommonAgentSchemas.webhook.output,
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n"],
@@ -51,6 +49,9 @@ export async function POST(req: NextRequest) {
           failedExecutions: 0,
           averageExecutionTime: 0,
         },
+        // Schema fields will be added after database migration
+        // inputSchema: CommonAgentSchemas.webhook.input,
+        // outputSchema: CommonAgentSchemas.webhook.output,
       },
     });
 
