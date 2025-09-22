@@ -191,3 +191,31 @@ model UserAgentInteraction {
   @@index([userId, lastExecutedAt])
   @@index([agentId, totalExecutions])
 }
+
+model RequestLog {
+  id             String    @id @default(cuid())
+  traceId        String    @unique
+  method         String
+  url            String
+  path           String
+  userAgent      String?
+  ipAddress      String?
+  userId         String?
+  sessionId      String?
+  requestHeaders Json?
+  requestBody    Json?
+  requestSize    Int?
+  responseStatus Int?
+  responseBody   Json?
+  responseSize   Int?
+  duration       Int
+  errorCode      String?
+  errorMessage   String?
+  timestamp      DateTime  @default(now())
+
+  @@index([traceId])
+  @@index([method, path])
+  @@index([userId, timestamp])
+  @@index([errorCode, timestamp])
+  @@index([timestamp])
+}

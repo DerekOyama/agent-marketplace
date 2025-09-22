@@ -166,7 +166,7 @@ export class DataSanitizer {
   /**
    * Check if a value looks like sensitive data
    */
-  private looksLikeSensitiveData(value: string): boolean {
+  public looksLikeSensitiveData(value: string): boolean {
     // Check for common patterns
     const patterns = [
       /^[A-Za-z0-9]{20,}$/, // Long alphanumeric strings (tokens)
