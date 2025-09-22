@@ -1,246 +1,192 @@
-datasource db { 
-  provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL") 
+generator client {
+  provider = "prisma-client-js"
 }
 
-generator client { 
-  provider = "prisma-client-js" 
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  creditBalanceCents Int      @default(1000) // $10.00 in cents
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Existing relations
-  mandates      Mandate[]
-  transactions  Transaction[]
-  
-  // New relations for metrics tracking
-  executions    AgentExecution[]
-  logs          AgentLog[]
-  agentInteractions UserAgentInteraction[]
+  id                 String                 @id @default(cuid())
+  email              String                 @unique
+  creditBalanceCents Int                    @default(1000)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  executions         AgentExecution[]
+  logs               AgentLog[]
+  mandates           Mandate[]
+  transactions       Transaction[]
+  agentInteractions  UserAgentInteraction[]
 }
 
 model Agent {
-  id        String   @id @default(cuid())
-  name      String
-  description String?
-  quoteUrl  String
-  runUrl    String
-  token     String
-  type      String   @default("legacy") // "legacy" or "n8n"
-  n8nWorkflowId String?
-  n8nInstanceUrl String?
-  webhookUrl String?
-  triggerType String? // "webhook", "manual", "schedule"
-  isActive  Boolean  @default(true)
-  metadata  Json?
-  pricing   Json?
-  stats     Json?
-  inputSchema Json?  // JSON schema for input validation
-  outputSchema Json? // JSON schema for output format
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // New computed fields for performance
-  lastExecutedAt  DateTime?
-  totalExecutions Int       @default(0)
-  avgRating       Float?    // Computed from UserAgentInteraction
-  totalUsers      Int       @default(0)
-  
-  // Existing relations
-  transactions Transaction[]
-  
-  // New relations for metrics tracking
-  executions    AgentExecution[]
-  metrics       AgentMetrics[]
-  logs          AgentLog[]
+  id               String                 @id @default(cuid())
+  name             String
+  description      String?
+  runUrl           String
+  quoteUrl         String
+  token            String
+  type             String                 @default("legacy")
+  n8nWorkflowId    String?
+  n8nInstanceUrl   String?
+  webhookUrl       String?
+  triggerType      String?
+  isActive         Boolean                @default(true)
+  metadata         Json?
+  pricing          Json?
+  stats            Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  lastExecutedAt   DateTime?
+  totalExecutions  Int                    @default(0)
+  avgRating        Float?
+  totalUsers       Int                    @default(0)
+  inputSchema      Json?
+  outputSchema     Json?
+  executions       AgentExecution[]
+  logs             AgentLog[]
+  metrics          AgentMetrics[]
+  transactions     Transaction[]
   userInteractions UserAgentInteraction[]
 }
 
 model Mandate {
   id        String   @id @default(cuid())
   userId    String
-  rulesJson Json
   status    String   @default("active")
+  rulesJson Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   userId      String
   agentId     String
   amountCents Int
-  currency    String   @default("USD")
-  status      String   @default("pending")
+  currency    String     @default("USD")
+  status      String     @default("pending")
   stripePi    String?
   requestJson Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   receiptJson Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user  User  @relation(fields: [userId], references: [id])
-  agent Agent @relation(fields: [agentId], references: [id])
-  logs  AuditLog[]
+  logs        AuditLog[]
+  agent       Agent      @relation(fields: [agentId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  txId      String
-  actor     String
-  event     String
-  payload   Json
-  createdAt DateTime @default(now())
+  id          String      @id @default(cuid())
+  txId        String
+  actor       String
+  createdAt   DateTime    @default(now())
+  event       String
+  payload     Json
   transaction Transaction @relation(fields: [txId], references: [id])
 }
 
-// NEW: Detailed execution tracking
 model AgentExecution {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   agentId         String
   userId          String
-  executionId     String   @unique // From StandardAgentOutput
-  status          String   // "success", "failed", "timeout", "error"
-  duration        Int      // Execution time in milliseconds
-  creditsConsumed Int      // Credits deducted
-  httpStatus      Int?     // HTTP response status
-  errorCode       String?  // Categorized error type
-  errorMessage    String?  // Sanitized error message
-  
-  // Input/Output Metadata (no sensitive data)
-  inputSize       Int?     // Size of input data in bytes
-  outputSize      Int?     // Size of output data in bytes
-  inputType       String?  // "text", "json", "file", etc.
-  outputType      String?  // "text", "json", "file", etc.
-  
-  // Performance Metrics
-  responseTime    Int?     // Network response time
-  processingTime  Int?     // Agent processing time
-  queueTime       Int?     // Time spent in queue
-  
-  // User Context
-  sessionId       String?  // User session identifier
-  userAgent       String?  // Client user agent
-  ipAddress       String?  // Anonymized IP (first 3 octets)
-  
-  // Timestamps
-  startedAt       DateTime @default(now())
+  executionId     String    @unique
+  status          String
+  duration        Int
+  creditsConsumed Int
+  httpStatus      Int?
+  errorCode       String?
+  errorMessage    String?
+  inputSize       Int?
+  outputSize      Int?
+  inputType       String?
+  outputType      String?
+  responseTime    Int?
+  processingTime  Int?
+  queueTime       Int?
+  sessionId       String?
+  userAgent       String?
+  ipAddress       String?
+  startedAt       DateTime  @default(now())
   completedAt     DateTime?
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  agent           Agent    @relation(fields: [agentId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
-  
+  createdAt       DateTime  @default(now())
+  agent           Agent     @relation(fields: [agentId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
+
   @@index([agentId, createdAt])
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([executionId])
 }
 
-// NEW: Time-series metrics aggregation
 model AgentMetrics {
-  id              String   @id @default(cuid())
-  agentId         String
-  date            DateTime // Date for aggregation (YYYY-MM-DD)
-  hour            Int?     // Hour for hourly aggregation (0-23)
-  
-  // Execution Counts
-  totalExecutions Int      @default(0)
-  successfulExecutions Int @default(0)
-  failedExecutions     Int @default(0)
-  timeoutExecutions    Int @default(0)
-  errorExecutions      Int @default(0)
-  
-  // Performance Metrics
-  avgDuration     Float?   // Average execution time
-  minDuration     Int?     // Minimum execution time
-  maxDuration     Int?     // Maximum execution time
-  p95Duration     Int?     // 95th percentile duration
-  p99Duration     Int?     // 99th percentile duration
-  
-  // Usage Metrics
-  uniqueUsers     Int      @default(0)
-  totalCreditsConsumed Int @default(0)
+  id                     String   @id @default(cuid())
+  agentId                String
+  date                   DateTime
+  hour                   Int?
+  totalExecutions        Int      @default(0)
+  successfulExecutions   Int      @default(0)
+  failedExecutions       Int      @default(0)
+  timeoutExecutions      Int      @default(0)
+  errorExecutions        Int      @default(0)
+  avgDuration            Float?
+  minDuration            Int?
+  maxDuration            Int?
+  p95Duration            Int?
+  p99Duration            Int?
+  uniqueUsers            Int      @default(0)
+  totalCreditsConsumed   Int      @default(0)
   avgCreditsPerExecution Float?
-  
-  // Error Analysis
-  errorCounts     Json?    // { "TIMEOUT": 5, "UNREACHABLE": 2, ... }
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  agent           Agent    @relation(fields: [agentId], references: [id])
-  
+  errorCounts            Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  agent                  Agent    @relation(fields: [agentId], references: [id])
+
   @@unique([agentId, date, hour])
   @@index([agentId, date])
   @@index([date])
 }
 
-// NEW: Detailed execution logs
 model AgentLog {
-  id              String   @id @default(cuid())
-  executionId     String   // Links to AgentExecution
-  agentId         String
-  userId          String
-  
-  // Log Categories
-  category        String   // "execution", "error", "performance", "user_action"
-  level           String   // "info", "warn", "error", "debug"
-  message         String   // Sanitized log message
-  
-  // Context Data (anonymized)
-  context         Json?    // Additional context without sensitive data
-  metadata        Json?    // Execution metadata
-  
-  // Timestamps
-  timestamp       DateTime @default(now())
-  
-  // Relations
-  agent           Agent    @relation(fields: [agentId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
-  
+  id          String   @id @default(cuid())
+  executionId String
+  agentId     String
+  userId      String
+  category    String
+  level       String
+  message     String
+  context     Json?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+  agent       Agent    @relation(fields: [agentId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
   @@index([executionId])
   @@index([agentId, timestamp])
   @@index([category, level, timestamp])
 }
 
-// NEW: User behavior and interaction tracking
 model UserAgentInteraction {
-  id              String   @id @default(cuid())
-  userId          String
-  agentId         String
-  
-  // Interaction Metrics
-  totalExecutions Int      @default(0)
-  successfulExecutions Int @default(0)
-  lastExecutedAt  DateTime?
-  firstExecutedAt DateTime?
-  
-  // User Preferences
-  isFavorite      Boolean  @default(false)
-  rating          Int?     // 1-5 star rating
-  feedback        String?  // User feedback text
-  
-  // Usage Patterns
-  avgExecutionsPerDay Float?
-  preferredTimeOfDay  Int?   // Hour of day (0-23)
-  preferredDayOfWeek  Int?   // Day of week (0-6)
-  
-  // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  user            User     @relation(fields: [userId], references: [id])
-  agent           Agent    @relation(fields: [agentId], references: [id])
-  
+  id                   String    @id @default(cuid())
+  userId               String
+  agentId              String
+  totalExecutions      Int       @default(0)
+  successfulExecutions Int       @default(0)
+  lastExecutedAt       DateTime?
+  firstExecutedAt      DateTime?
+  isFavorite           Boolean   @default(false)
+  rating               Int?
+  feedback             String?
+  avgExecutionsPerDay  Float?
+  preferredTimeOfDay   Int?
+  preferredDayOfWeek   Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  agent                Agent     @relation(fields: [agentId], references: [id])
+  user                 User      @relation(fields: [userId], references: [id])
+
   @@unique([userId, agentId])
   @@index([userId, lastExecutedAt])
   @@index([agentId, totalExecutions])

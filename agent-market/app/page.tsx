@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
-import N8nDiscovery from "../components/N8nDiscovery";
+import Link from "next/link";
 
 interface Agent {
   id: string;
@@ -265,6 +265,24 @@ export default function Home() {
             Manage and test your AI agents with individual debugging controls
           </p>
           
+          {/* Navigation Menu */}
+          <div className="flex justify-center mb-6">
+            <nav className="flex space-x-4">
+              <Link 
+                href="/n8n" 
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Connect N8n Instance
+              </Link>
+              <Link 
+                href="/simple" 
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              >
+                Simple View
+              </Link>
+            </nav>
+          </div>
+          
           {/* Credit Balance */}
           <div className="max-w-md mx-auto mb-6">
             <CreditBalance 
@@ -306,20 +324,45 @@ export default function Home() {
           </div>
         </div>
 
-        {/* N8n Discovery */}
-        <N8nDiscovery />
-
         {/* Agents Grid */}
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          {agents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onAction={(action) => handleAgentAction(action, agent.id)}
-              loading={loading}
-              log={log}
-            />
-          ))}
+        <div className="max-w-6xl mx-auto">
+          {agents.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  onAction={(action) => handleAgentAction(action, agent.id)}
+                  loading={loading}
+                  log={log}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 max-w-md mx-auto border border-amber-200 shadow-lg">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">No Agents Found</h3>
+                <p className="text-gray-600 mb-6">
+                  Get started by seeding some test agents or connecting n8n workflows.
+                </p>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleAgentAction("seed", "")}
+                    disabled={loading}
+                    className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    {loading ? "Loading..." : "Create Test Agent"}
+                  </button>
+                  <Link 
+                    href="/n8n" 
+                    className="block w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
+                  >
+                    Connect N8n Workflows
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Log Output */}
@@ -338,24 +381,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty State */}
-        {agents.length === 0 && !log && (
-          <div className="text-center py-12">
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 max-w-md mx-auto border border-amber-200 shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">No Agents Found</h3>
-              <p className="text-gray-600 mb-6">
-                Get started by seeding some test agents or check the API logs above.
-              </p>
-              <button
-                onClick={() => handleAgentAction("seed", "")}
-                disabled={loading}
-                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
-                {loading ? "Loading..." : "Create Test Agent"}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
