@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { CommonAgentSchemas } from "../../../../types/agent-schemas";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     const agent = await prisma.agent.create({
       data: {
         name: name || "N8n Webhook Agent",
-        description: `N8n webhook agent: ${webhookUrl}`,
+        description: `N8n webhook agent: ${webhookUrl} - Uses standardized JSON input/output format`,
         quoteUrl: webhookUrl, // Use webhook URL as quote URL
         runUrl: webhookUrl,   // Use webhook URL as run URL
         token: "n8n-webhook-token", // Generate a token for n8n agents
@@ -28,12 +29,16 @@ export async function POST(req: NextRequest) {
         webhookUrl: webhookUrl,
         triggerType: "webhook",
         isActive: true,
+        inputSchema: CommonAgentSchemas.webhook.input,
+        outputSchema: CommonAgentSchemas.webhook.output,
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n"],
           version: "1.0.0",
           author: "n8n",
           documentation: webhookUrl,
+          inputFormat: "standardized",
+          outputFormat: "standardized"
         },
         pricing: {
           pricePerExecution: 0.01,

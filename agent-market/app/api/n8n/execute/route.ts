@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { StandardAgentInput, StandardAgentOutput, validateAgentInput } from "../../../../types/agent-schemas";
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,22 +69,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Prepare standardized input
+    const standardInput: StandardAgentInput = {
+      data: inputData || { test: true },
+      metadata: {
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        timestamp: new Date().toISOString(),
+        version: "1.0.0"
+      },
+      config: {
+        timeout: 30000
+      }
+    };
+
+    // Validate input if schema exists
+    if (agent.inputSchema) {
+      const validation = validateAgentInput(standardInput, agent.inputSchema as any);
+      if (!validation.valid) {
+        return NextResponse.json({
+          success: false,
+          error: "Input validation failed",
+          details: validation.errors,
+          agentId
+        }, { status: 400 });
+      }
+    }
+
     // Execute the webhook
     console.log('Executing webhook:', agent.webhookUrl);
+    console.log('Standardized input:', JSON.stringify(standardInput, null, 2));
     
     let response;
     let responseData;
-    let parsedData;
+    let parsedData: StandardAgentOutput;
     const startTime = Date.now();
+    const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       response = await fetch(agent.webhookUrl, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "User-Agent": "n8n-agent-marketplace/1.0"
+          "User-Agent": "n8n-agent-marketplace/1.0",
+          "X-Execution-ID": executionId
         },
-        body: JSON.stringify(inputData || { test: true }),
+        body: JSON.stringify(standardInput),
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });
 
@@ -93,9 +124,35 @@ export async function POST(req: NextRequest) {
       responseData = await response.text();
       
       try {
-        parsedData = JSON.parse(responseData);
+        const rawParsedData = JSON.parse(responseData);
+        
+        // Convert to standardized output format if needed
+        if (rawParsedData.success !== undefined && rawParsedData.data !== undefined && rawParsedData.metadata !== undefined) {
+          // Already in standard format
+          parsedData = rawParsedData as StandardAgentOutput;
+        } else {
+          // Convert legacy format to standard format
+          parsedData = {
+            success: response.ok,
+            data: typeof rawParsedData === 'object' ? rawParsedData : { result: rawParsedData },
+            metadata: {
+              executionId,
+              timestamp: new Date().toISOString(),
+              duration: Date.now() - startTime
+            }
+          };
+        }
       } catch {
-        parsedData = responseData;
+        // Handle non-JSON responses
+        parsedData = {
+          success: response.ok,
+          data: { result: responseData },
+          metadata: {
+            executionId,
+            timestamp: new Date().toISOString(),
+            duration: Date.now() - startTime
+          }
+        };
       }
 
       console.log('Webhook execution result:', {
@@ -105,34 +162,58 @@ export async function POST(req: NextRequest) {
     } catch (fetchError) {
       console.error('Webhook fetch error:', fetchError);
       
+      // Create standardized error response
+      const errorResponse: StandardAgentOutput = {
+        success: false,
+        data: {},
+        metadata: {
+          executionId,
+          timestamp: new Date().toISOString(),
+          duration: Date.now() - startTime
+        },
+        error: {
+          code: "EXECUTION_ERROR",
+          message: "Failed to execute webhook",
+          details: {
+            agentId,
+            webhookUrl: agent.webhookUrl
+          }
+        }
+      };
+
       // Handle different types of fetch errors
       if (fetchError instanceof Error) {
         if (fetchError.name === 'AbortError') {
-          return NextResponse.json({
-            success: false,
-            error: "Webhook execution timed out",
-            details: "The webhook did not respond within 30 seconds",
-            agentId,
-            webhookUrl: agent.webhookUrl
-          }, { status: 408 });
+          errorResponse.error = {
+            code: "TIMEOUT",
+            message: "Webhook execution timed out",
+            details: {
+              timeout: "30 seconds",
+              agentId,
+              webhookUrl: agent.webhookUrl
+            }
+          };
+          return NextResponse.json(errorResponse, { status: 408 });
         } else if (fetchError.message.includes('ENOTFOUND') || fetchError.message.includes('ECONNREFUSED')) {
-          return NextResponse.json({
-            success: false,
-            error: "Webhook unreachable",
-            details: "Could not connect to the webhook URL. Please check if the n8n instance is running and the webhook URL is correct.",
-            agentId,
-            webhookUrl: agent.webhookUrl
-          }, { status: 503 });
+          errorResponse.error = {
+            code: "UNREACHABLE",
+            message: "Webhook unreachable",
+            details: {
+              reason: "Could not connect to the webhook URL. Please check if the n8n instance is running and the webhook URL is correct.",
+              agentId,
+              webhookUrl: agent.webhookUrl
+            }
+          };
+          return NextResponse.json(errorResponse, { status: 503 });
         }
       }
       
-      return NextResponse.json({
-        success: false,
-        error: "Failed to execute webhook",
-        details: fetchError instanceof Error ? fetchError.message : "Unknown network error",
-        agentId,
-        webhookUrl: agent.webhookUrl
-      }, { status: 500 });
+      errorResponse.error!.details = {
+        ...errorResponse.error!.details,
+        originalError: fetchError instanceof Error ? fetchError.message : "Unknown network error"
+      };
+      
+      return NextResponse.json(errorResponse, { status: 500 });
     }
 
     // Calculate execution time
@@ -230,29 +311,47 @@ export async function POST(req: NextRequest) {
       select: { creditBalanceCents: true }
     });
 
-    return NextResponse.json({
-      success: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      data: parsedData,
-      agentId,
-      webhookUrl: agent.webhookUrl,
-      executionTime: new Date().toISOString(),
-      responseSize: responseData.length,
-      contentType: response.headers.get('content-type') || 'unknown',
-      creditsDeducted: response.ok ? executionCostCents : 0,
-      remainingCredits: updatedUser?.creditBalanceCents || 0
-    });
+    // Enhance the parsed data with execution metadata
+    const finalResponse: StandardAgentOutput = {
+      ...parsedData,
+      metadata: {
+        ...parsedData.metadata,
+        executionId,
+        agentId,
+        webhookUrl: agent.webhookUrl,
+        responseSize: responseData.length,
+        contentType: response.headers.get('content-type') || 'unknown'
+      },
+      usage: {
+        creditsConsumed: response.ok ? executionCostCents : 0,
+        remainingCredits: updatedUser?.creditBalanceCents || 0,
+        httpStatus: response.status,
+        httpStatusText: response.statusText
+      }
+    };
+
+    return NextResponse.json(finalResponse);
 
   } catch (error) {
     console.error("N8n execution error:", error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "Failed to execute n8n workflow",
-        details: error instanceof Error ? error.message : "Unknown error"
+    
+    const errorResponse: StandardAgentOutput = {
+      success: false,
+      data: {},
+      metadata: {
+        executionId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        duration: 0
       },
-      { status: 500 }
-    );
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Failed to execute n8n workflow",
+        details: {
+          originalError: error instanceof Error ? error.message : "Unknown error"
+        }
+      }
+    };
+    
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

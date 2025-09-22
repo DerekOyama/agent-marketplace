@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
+import { StandardAgentInput, StandardAgentOutput } from "../../../../../types/agent-schemas";
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,15 +18,29 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "agent_not_found" }, { status: 404 });
     }
     
-    const payload = { 
-      tx: { 
-        id: tx.id, 
-        amount_cents: tx.amountCents, 
-        currency: tx.currency 
-      }, 
-      mandate_summary: { 
-        max_amount_cents: 999999 
-      } 
+    // Prepare standardized input for agent
+    const standardInput: StandardAgentInput = {
+      data: {
+        transaction: {
+          id: tx.id,
+          amount_cents: tx.amountCents,
+          currency: tx.currency
+        },
+        mandate_summary: {
+          max_amount_cents: 999999
+        },
+        // Include any request data from the transaction
+        ...(tx.requestJson as Record<string, unknown> || {})
+      },
+      metadata: {
+        requestId: `tx_${tx.id}`,
+        userId: tx.userId,
+        timestamp: new Date().toISOString(),
+        version: "1.0.0"
+      },
+      config: {
+        timeout: 30000
+      }
     };
     
     // Check if this is a demo agent with placeholder URLs
@@ -33,21 +48,30 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
                        tx.agent.runUrl.includes("localhost") ||
                        tx.agent.token === "PUT_A_LONG_RANDOM_TOKEN_HERE";
     
-    let receipt = null;
+    let receipt: StandardAgentOutput;
     let agentResponseStatus = 200;
+    const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const startTime = Date.now();
     
     if (isDemoAgent) {
-      // Simulate agent response for demo
+      // Simulate standardized agent response for demo
       receipt = {
-        transaction_id: tx.id,
-        status: "success",
-        output: { 
+        success: true,
+        data: {
+          transaction_id: tx.id,
+          status: "success",
           message: "Demo agent executed successfully",
           simulated: true,
           agent_name: tx.agent.name
         },
+        metadata: {
+          executionId,
+          timestamp: new Date().toISOString(),
+          duration: Math.floor(Math.random() * 1000) + 500
+        },
         usage: {
-          duration_ms: Math.floor(Math.random() * 1000) + 500
+          creditsConsumed: tx.amountCents,
+          tokensUsed: Math.floor(Math.random() * 100) + 50
         }
       };
       agentResponseStatus = 200;
@@ -59,23 +83,49 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           headers: { 
             "Content-Type": "application/json", 
             "Authorization": `Bearer ${tx.agent.token}`, 
-            "X-Idempotency-Key": tx.id 
+            "X-Idempotency-Key": tx.id,
+            "X-Execution-ID": executionId
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(standardInput),
           signal: AbortSignal.timeout(30000) // 30 second timeout
         });
         
         agentResponseStatus = res.status;
-        receipt = await res.json().catch(() => ({
-          error: "Invalid JSON response from agent",
-          status: res.status
-        }));
+        const rawResponse = await res.json().catch(() => null);
+        
+        if (rawResponse && rawResponse.success !== undefined && rawResponse.data !== undefined && rawResponse.metadata !== undefined) {
+          // Already in standard format
+          receipt = rawResponse as StandardAgentOutput;
+        } else {
+          // Convert legacy format to standard format
+          receipt = {
+            success: res.ok,
+            data: rawResponse || { error: "Invalid JSON response from agent", status: res.status },
+            metadata: {
+              executionId,
+              timestamp: new Date().toISOString(),
+              duration: Date.now() - startTime
+            }
+          };
+        }
       } catch (fetchError) {
         console.error("Agent fetch error:", fetchError);
         receipt = {
-          error: "Agent unreachable",
-          message: fetchError instanceof Error ? fetchError.message : String(fetchError),
-          agent_url: tx.agent.runUrl
+          success: false,
+          data: {},
+          metadata: {
+            executionId,
+            timestamp: new Date().toISOString(),
+            duration: Date.now() - startTime
+          },
+          error: {
+            code: "AGENT_UNREACHABLE",
+            message: "Agent unreachable",
+            details: {
+              originalError: fetchError instanceof Error ? fetchError.message : String(fetchError),
+              agent_url: tx.agent.runUrl
+            }
+          }
         };
         agentResponseStatus = 500;
       }
@@ -88,17 +138,21 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         actor: "marketplace", 
         event: "dispatched", 
         payload: {
-          ...payload,
+          standardInput,
           agent_url: tx.agent.runUrl,
-          is_demo: isDemoAgent
+          is_demo: isDemoAgent,
+          execution_id: executionId
         }
       } 
     });
     
+    // Return standardized response
     return NextResponse.json({ 
       receiptFromAgent: receipt, 
       status: agentResponseStatus,
-      isDemo: isDemoAgent
+      isDemo: isDemoAgent,
+      executionId,
+      standardFormat: true
     }, { status: 200 });
     
   } catch (error) {

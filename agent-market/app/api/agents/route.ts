@@ -21,6 +21,8 @@ export async function GET() {
         metadata: true,
         pricing: true,
         stats: true,
+        inputSchema: true,
+        outputSchema: true,
         createdAt: true,
         updatedAt: true
       }
