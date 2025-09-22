@@ -257,113 +257,117 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">AI Agent Marketplace</h1>
-          <p className="text-lg text-gray-800 mb-6">
-            Manage and test your AI agents with individual debugging controls
-          </p>
-          
-          {/* Navigation Menu */}
-          <div className="flex justify-center mb-6">
-            <nav className="flex space-x-4">
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">AI Agent Marketplace</h1>
+              <p className="mt-2 text-gray-600">
+                Manage and test your AI agents with professional debugging tools
+              </p>
+            </div>
+            
+            {/* Top Navigation */}
+            <div className="flex items-center space-x-4">
+              <CreditBalance 
+                onBalanceUpdate={setCreditBalance}
+                refreshTrigger={creditRefreshTrigger}
+              />
               <Link 
                 href="/n8n" 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
-                Connect N8n Instance
+                Connect N8n
               </Link>
               <button
                 onClick={() => setShowDebugMenu(!showDebugMenu)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm"
               >
-                {showDebugMenu ? "Hide Debug Menu" : "Debug Menu"}
+                {showDebugMenu ? "Hide Debug" : "Debug"}
               </button>
-            </nav>
+            </div>
           </div>
-          
-          {/* Credit Balance */}
-          <div className="max-w-md mx-auto mb-6">
-            <CreditBalance 
-              onBalanceUpdate={setCreditBalance}
-              refreshTrigger={creditRefreshTrigger}
-            />
-          </div>
+        </div>
+      </div>
 
-          {/* Debug Menu */}
-          {showDebugMenu && (
-            <div className="max-w-2xl mx-auto mb-8">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-amber-200 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Debug Controls</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleAgentAction("seed", "")}
-                    disabled={loading}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {loading ? "Loading..." : "Seed Agent"}
-                  </button>
-                  <button
-                    onClick={() => handleAgentAction("credits", "")}
-                    disabled={loading}
-                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Check Credits
-                  </button>
-                  <button
-                    onClick={() => handleAgentAction("mandate", "")}
-                    disabled={loading}
-                    className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Create Mandate
-                  </button>
-                  <button
-                    onClick={() => fetchAgents()}
-                    disabled={loading}
-                    className="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Refresh Agents
-                  </button>
-                </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Debug Menu */}
+        {showDebugMenu && (
+          <div className="mb-8">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Debug Controls</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button
+                  onClick={() => handleAgentAction("seed", "")}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                >
+                  {loading ? "Loading..." : "Seed Agent"}
+                </button>
+                <button
+                  onClick={() => handleAgentAction("credits", "")}
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                >
+                  Check Credits
+                </button>
+                <button
+                  onClick={() => handleAgentAction("mandate", "")}
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                >
+                  Create Mandate
+                </button>
+                <button
+                  onClick={() => fetchAgents()}
+                  disabled={loading}
+                  className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                >
+                  Refresh Agents
+                </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Agents Grid */}
-        <div className="max-w-7xl mx-auto">
+        {/* Agents List */}
+        <div className="space-y-6">
           {agents.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8 mb-12">
-              {agents.map((agent) => (
-                <AgentCard
-                  key={agent.id}
-                  agent={agent}
-                  onAction={(action) => handleAgentAction(action, agent.id)}
-                  loading={loading}
-                  log={log}
-                />
-              ))}
-            </div>
+            agents.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                onAction={(action) => handleAgentAction(action, agent.id)}
+                loading={loading}
+                log={log}
+              />
+            ))
           ) : (
-            <div className="text-center py-12">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 max-w-md mx-auto border border-amber-200 shadow-lg">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">No Agents Found</h3>
-                <p className="text-gray-600 mb-6">
-                  Get started by seeding some test agents or connecting n8n workflows.
+            <div className="text-center py-16">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 max-w-lg mx-auto">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Agents Found</h3>
+                <p className="text-gray-600 mb-8">
+                  Get started by creating your first AI agent or connecting n8n workflows.
                 </p>
-                <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
                     onClick={() => handleAgentAction("seed", "")}
                     disabled={loading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                   >
                     {loading ? "Loading..." : "Create Test Agent"}
                   </button>
                   <Link 
                     href="/n8n" 
-                    className="block w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
                   >
                     Connect N8n Workflows
                   </Link>
@@ -375,18 +379,20 @@ export default function Home() {
 
         {/* Log Output */}
         {log && (
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-gray-900 text-green-400 p-8 rounded-lg font-mono text-sm overflow-x-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold">API Response Log</h3>
+          <div className="mt-8">
+            <div className="bg-gray-900 text-green-400 rounded-lg border border-gray-700 overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 className="text-lg font-semibold text-white">API Response Log</h3>
                 <button
                   onClick={() => setLog("")}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   Clear Log
                 </button>
               </div>
-              <pre className="whitespace-pre-wrap break-words leading-relaxed">{log}</pre>
+              <div className="p-4">
+                <pre className="whitespace-pre-wrap break-words leading-relaxed font-mono text-sm overflow-x-auto">{log}</pre>
+              </div>
             </div>
           </div>
         )}

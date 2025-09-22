@@ -145,21 +145,22 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
   };
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl shadow-lg border border-amber-200 p-4 hover:shadow-xl transition-all duration-300">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Agent Info & Key Stats */}
         <div className="lg:col-span-2">
           {/* Agent Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-600 to-orange-700 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">
                   {agent.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-amber-900">{agent.name}</h3>
-                <p className="text-xs text-amber-700 font-mono">ID: {agent.id.slice(0, 8)}...</p>
+                <h3 className="text-xl font-bold text-gray-900">{agent.name}</h3>
+                <p className="text-sm text-gray-500 font-mono">ID: {agent.id.slice(0, 8)}...</p>
                 {isN8nAgent && (
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
@@ -180,76 +181,77 @@ export default function AgentCard({ agent, onAction, loading, log }: AgentCardPr
             </div>
           </div>
 
-          {/* Key Statistics - Compact Grid */}
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Price</p>
-              <p className="text-sm font-bold text-gray-900">{stats.price}</p>
+          {/* Key Statistics - Clean Grid */}
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Price</p>
+              <p className="text-sm font-semibold text-gray-900">{stats.price}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Success</p>
-              <p className="text-sm font-bold text-green-800">{stats.successRate} ✅</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Success Rate</p>
+              <p className="text-sm font-semibold text-green-700">{stats.successRate}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Duration</p>
-              <p className="text-sm font-bold text-gray-900">{stats.avgDuration}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Duration</p>
+              <p className="text-sm font-semibold text-gray-900">{stats.avgDuration}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Jobs</p>
-              <p className="text-sm font-bold text-gray-900">{stats.jobsCompleted}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Jobs Completed</p>
+              <p className="text-sm font-semibold text-gray-900">{stats.jobsCompleted}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Rating</p>
-              <p className="text-sm font-bold text-gray-900">⭐ {stats.avgRating}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Rating</p>
+              <p className="text-sm font-semibold text-gray-900">⭐ {stats.avgRating}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Repeat</p>
-              <p className="text-sm font-bold text-gray-900">{stats.repeatClients}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Repeat Rate</p>
+              <p className="text-sm font-semibold text-gray-900">{stats.repeatClients}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Failure</p>
-              <p className="text-sm font-bold text-red-700">{stats.failureRate}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Failure Rate</p>
+              <p className="text-sm font-semibold text-red-600">{stats.failureRate}</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded p-2 border border-amber-300 shadow-sm">
-              <p className="text-xs text-amber-800 font-medium">Uptime</p>
-              <p className="text-sm font-bold text-green-800">{stats.uptime}</p>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-600 font-medium">Uptime</p>
+              <p className="text-sm font-semibold text-green-700">{stats.uptime}</p>
             </div>
           </div>
 
-          {/* Agent URL - Compact */}
-          <div className="p-2 bg-white/80 backdrop-blur-sm rounded border border-amber-300 shadow-sm">
-            <p className="text-xs text-amber-800 font-medium mb-1">Run URL</p>
-            <p className="text-xs font-mono text-gray-800 break-all truncate">{agent.runUrl}</p>
+          {/* Agent URL - Clean */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-600 font-medium mb-1">Run URL</p>
+            <p className="text-xs font-mono text-gray-700 break-all">{agent.runUrl}</p>
           </div>
         </div>
 
         {/* Right Column - Action Buttons */}
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-            <h4 className="text-sm font-semibold text-gray-900 mb-2 col-span-2 lg:col-span-1">Debug Controls</h4>
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900 mb-4">Actions</h4>
+          <div className="grid grid-cols-1 gap-3">
             {actions.map((action) => (
               <button
                 key={action.action}
                 onClick={() => action.action === 'requirements' ? setShowRequirements(true) : handleAction(action.action)}
                 disabled={loading}
-                className={`px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${action.color} hover:shadow-md`}
+                className={`px-4 py-3 rounded-lg text-white text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${action.color} hover:shadow-md`}
                 title={action.description}
               >
-                {loading ? "..." : action.name}
+                {loading ? "Loading..." : action.name}
               </button>
             ))}
           </div>
 
-          {/* Debug Log - Compact */}
+          {/* Debug Log - Clean */}
           {localLog && (
-            <div className="mt-3">
-              <h4 className="text-xs font-semibold text-amber-800 mb-1">Debug Log</h4>
-              <pre className="p-2 bg-amber-900 text-amber-100 rounded text-xs overflow-auto max-h-20 font-mono border border-amber-700">
-                {localLog}
-              </pre>
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Debug Log</h4>
+              <div className="bg-gray-900 text-green-400 rounded-lg p-3 overflow-auto max-h-32">
+                <pre className="text-xs font-mono whitespace-pre-wrap">{localLog}</pre>
+              </div>
             </div>
           )}
         </div>
+      </div>
       </div>
 
       {/* Requirements Modal */}
