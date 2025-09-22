@@ -169,6 +169,11 @@ export async function POST(req: NextRequest) {
             agentId,
             webhookUrl: agent.webhookUrl
           }
+        },
+        usage: {
+          creditsConsumed: 0, // No credits consumed on failure
+          remainingCredits: user.creditBalanceCents,
+          executionCostCents: executionCostCents
         }
       };
 
@@ -278,8 +283,14 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Calculate actual credits consumed and get final balance
+    let actualCreditsConsumed = 0;
+    let finalBalance = user.creditBalanceCents;
+
     // Deduct credits only on successful execution
     if (response.ok) {
+      actualCreditsConsumed = executionCostCents;
+      
       // Get current balance before deduction to avoid race conditions
       const currentUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -287,20 +298,22 @@ export async function POST(req: NextRequest) {
       });
       
       if (currentUser) {
+        finalBalance = currentUser.creditBalanceCents - executionCostCents;
         await prisma.user.update({
           where: { id: userId },
           data: { 
-            creditBalanceCents: currentUser.creditBalanceCents - executionCostCents 
+            creditBalanceCents: finalBalance
           }
         });
       }
+    } else {
+      // On failed execution, get current balance without deducting
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { creditBalanceCents: true }
+      });
+      finalBalance = currentUser?.creditBalanceCents || user.creditBalanceCents;
     }
-
-    // Get updated user balance
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { creditBalanceCents: true }
-    });
 
     // Enhance the parsed data with execution metadata
     const finalResponse: StandardAgentOutput = {
@@ -316,11 +329,11 @@ export async function POST(req: NextRequest) {
       },
       usage: {
         ...(parsedData.usage || {}),
-        creditsConsumed: response.ok ? executionCostCents : 0,
-        // Add additional usage info without conflicting with the base interface
-        ...(updatedUser?.creditBalanceCents !== undefined && { remainingCredits: updatedUser.creditBalanceCents }),
-        ...(response.status && { httpStatus: response.status }),
-        ...(response.statusText && { httpStatusText: response.statusText })
+        creditsConsumed: actualCreditsConsumed,
+        remainingCredits: finalBalance,
+        executionCostCents: executionCostCents,
+        httpStatus: response.status,
+        httpStatusText: response.statusText
       }
     };
 
@@ -328,6 +341,18 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("N8n execution error:", error);
+    
+    // Get current user balance for error response
+    let currentBalance = 0;
+    try {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: "demo-user" },
+        select: { creditBalanceCents: true }
+      });
+      currentBalance = currentUser?.creditBalanceCents || 0;
+    } catch (balanceError) {
+      console.error("Failed to get balance for error response:", balanceError);
+    }
     
     const errorResponse: StandardAgentOutput = {
       success: false,
@@ -343,6 +368,11 @@ export async function POST(req: NextRequest) {
         details: {
           originalError: error instanceof Error ? error.message : "Unknown error"
         }
+      },
+      usage: {
+        creditsConsumed: 0, // No credits consumed on internal error
+        remainingCredits: currentBalance,
+        executionCostCents: 50 // Standard execution cost
       }
     };
     
