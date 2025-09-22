@@ -20,8 +20,8 @@ async function main() {
       webhookUrl: "https://derekoyama.app.n8n.cloud/webhook/test-agent",
       triggerType: "webhook",
       isActive: true,
-      inputSchema: CommonAgentSchemas.webhook.input,
-      outputSchema: CommonAgentSchemas.webhook.output,
+      inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.input)),
+      outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webhook.output)),
       metadata: {
         category: "n8n-webhook",
         tags: ["webhook", "n8n", "test"],
@@ -56,8 +56,8 @@ async function main() {
       type: "legacy",
       triggerType: "manual",
       isActive: true,
-      inputSchema: CommonAgentSchemas.textProcessor.input,
-      outputSchema: CommonAgentSchemas.textProcessor.output,
+      inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.input)),
+      outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.textProcessor.output)),
       metadata: {
         category: "ai-text",
         tags: ["text", "ai", "nlp", "summarization", "translation"],
@@ -92,8 +92,8 @@ async function main() {
       type: "legacy",
       triggerType: "manual",
       isActive: true,
-      inputSchema: CommonAgentSchemas.dataAnalyzer.input,
-      outputSchema: CommonAgentSchemas.dataAnalyzer.output,
+      inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.input)),
+      outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.dataAnalyzer.output)),
       metadata: {
         category: "data-science",
         tags: ["data", "analytics", "statistics", "ml", "predictions"],
@@ -128,8 +128,8 @@ async function main() {
       type: "legacy",
       triggerType: "manual",
       isActive: true,
-      inputSchema: CommonAgentSchemas.webScraper.input,
-      outputSchema: CommonAgentSchemas.webScraper.output,
+      inputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.input)),
+      outputSchema: JSON.parse(JSON.stringify(CommonAgentSchemas.webScraper.output)),
       metadata: {
         category: "web-automation",
         tags: ["scraping", "web", "automation", "data-extraction"],
