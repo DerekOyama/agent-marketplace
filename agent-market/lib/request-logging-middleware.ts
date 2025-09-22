@@ -34,9 +34,9 @@ export class RequestLoggingMiddleware {
    * Wrap an API route handler with request logging
    */
   async withLogging(
-    handler: (req: NextRequest, ...args: any[]) => Promise<NextResponse>,
+    handler: (req: NextRequest, ...args: unknown[]) => Promise<NextResponse>,
     req: NextRequest,
-    ...args: any[]
+    ...args: unknown[]
   ): Promise<NextResponse> {
     const startTime = Date.now();
     const traceId = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -106,9 +106,9 @@ export class RequestLoggingMiddleware {
    * Create a logged version of an API route handler
    */
   createLoggedHandler(
-    handler: (req: NextRequest, ...args: any[]) => Promise<NextResponse>
+    handler: (req: NextRequest, ...args: unknown[]) => Promise<NextResponse>
   ) {
-    return async (req: NextRequest, ...args: any[]) => {
+    return async (req: NextRequest, ...args: unknown[]) => {
       return this.withLogging(handler, req, ...args);
     };
   }
@@ -119,7 +119,7 @@ export const requestLoggingMiddleware = new RequestLoggingMiddleware();
 
 // Helper function to wrap handlers
 export function withRequestLogging(
-  handler: (req: NextRequest, ...args: any[]) => Promise<NextResponse>
+  handler: (req: NextRequest, ...args: unknown[]) => Promise<NextResponse>
 ) {
   return requestLoggingMiddleware.createLoggedHandler(handler);
 }
