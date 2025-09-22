@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { DataSanitizer } from './data-sanitizer';
+import { auditLogger } from './audit-logger';
 
 const prisma = new PrismaClient();
 const dataSanitizer = new DataSanitizer();
@@ -100,8 +101,55 @@ export class MetricsCollector {
 
       console.log(`📊 Recorded execution: ${execution.id} for agent ${executionData.agentId}`);
 
+      // Log system metrics for monitoring
+      await auditLogger.logSystemMetric({
+        metric: 'execution_count',
+        value: 1,
+        component: 'agent-execution',
+        unit: 'count',
+        tags: { 
+          agentId: executionData.agentId,
+          status: executionData.status,
+          duration: executionData.duration
+        }
+      });
+
+      // Log errors to centralized system
+      if (executionData.status !== 'success') {
+        await auditLogger.logSystemError({
+          errorCode: executionData.errorCode || 'EXECUTION_ERROR',
+          errorType: 'business',
+          severity: 'medium',
+          component: 'agent-execution',
+          agentId: executionData.agentId,
+          userId: executionData.userId,
+          executionId: executionData.executionId,
+          message: executionData.errorMessage || 'Agent execution failed',
+          details: {
+            status: executionData.status,
+            duration: executionData.duration,
+            httpStatus: executionData.httpStatus
+          }
+        });
+      }
+
     } catch (error) {
       console.error('❌ Failed to record execution:', error);
+      
+      // Log the error to system errors
+      await auditLogger.logSystemError({
+        errorCode: 'METRICS_COLLECTION_ERROR',
+        errorType: 'system',
+        severity: 'high',
+        component: 'metrics-collector',
+        message: 'Failed to record execution metrics',
+        details: {
+          agentId: executionData.agentId,
+          executionId: executionData.executionId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      });
+      
       // Don't throw - metrics collection should not break the main flow
     }
   }

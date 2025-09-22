@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from './prisma';
 import { DataSanitizer } from './data-sanitizer';
 import { ErrorCode } from './error-codes';
+import { auditLogger } from './audit-logger';
 
 export interface RequestLogData {
   traceId: string;
@@ -74,8 +75,56 @@ export class RequestLogger {
 
       console.log(`📝 Logged request: ${logData.traceId} - ${logData.method} ${logData.path} (${logData.duration}ms)`);
 
+      // Log system metrics
+      await auditLogger.logSystemMetric({
+        metric: 'request_duration',
+        value: logData.duration,
+        component: 'api',
+        unit: 'ms',
+        tags: {
+          method: logData.method,
+          path: logData.path,
+          status: logData.responseStatus,
+          agentId: logData.agentId
+        }
+      });
+
+      // Log errors to centralized system
+      if (logData.errorCode || (logData.responseStatus && logData.responseStatus >= 400)) {
+        await auditLogger.logSystemError({
+          errorCode: logData.errorCode || 'HTTP_ERROR',
+          errorType: 'system',
+          severity: (logData.responseStatus && logData.responseStatus >= 500) ? 'high' : 'medium',
+          component: 'api',
+          agentId: logData.agentId,
+          userId: logData.userId,
+          requestId: logData.traceId,
+          message: logData.errorMessage || `HTTP ${logData.responseStatus} error`,
+          details: {
+            method: logData.method,
+            path: logData.path,
+            status: logData.responseStatus,
+            duration: logData.duration
+          }
+        });
+      }
+
     } catch (error) {
       console.error('❌ Failed to log request:', error);
+      
+      // Log the logging failure itself
+      await auditLogger.logSystemError({
+        errorCode: 'REQUEST_LOGGING_ERROR',
+        errorType: 'system',
+        severity: 'high',
+        component: 'request-logger',
+        message: 'Failed to log request/response',
+        details: {
+          traceId: logData.traceId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      });
+      
       // Don't throw - logging should not break the main flow
     }
   }

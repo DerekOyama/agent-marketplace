@@ -225,3 +225,101 @@ model RequestLog {
   @@index([agentId, timestamp])
   @@index([executionId])
 }
+
+// Audit Trail Tables
+model AgentAuditLog {
+  id          String   @id @default(cuid())
+  agentId     String
+  field       String   // Field that was changed (e.g., "name", "pricing", "metadata")
+  oldValue    Json?    // Previous value
+  newValue    Json?    // New value
+  changedBy   String?  // User ID who made the change
+  changeType  String   // "create", "update", "delete"
+  timestamp   DateTime @default(now())
+  reason      String?  // Optional reason for the change
+  metadata    Json?    // Additional context
+
+  @@index([agentId, timestamp])
+  @@index([changedBy, timestamp])
+  @@index([field, timestamp])
+  @@index([timestamp])
+}
+
+model UserAuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  field       String   // Field that was changed (e.g., "email", "creditBalanceCents")
+  oldValue    Json?    // Previous value
+  newValue    Json?    // New value
+  changedBy   String?  // User ID who made the change (null for self-changes)
+  changeType  String   // "create", "update", "delete"
+  timestamp   DateTime @default(now())
+  reason      String?  // Optional reason for the change
+  metadata    Json?    // Additional context
+
+  @@index([userId, timestamp])
+  @@index([changedBy, timestamp])
+  @@index([field, timestamp])
+  @@index([timestamp])
+}
+
+model MandateAuditLog {
+  id          String   @id @default(cuid())
+  mandateId   String
+  field       String   // Field that was changed (e.g., "status", "rulesJson")
+  oldValue    Json?    // Previous value
+  newValue    Json?    // New value
+  changedBy   String   // User ID who made the change
+  changeType  String   // "create", "update", "delete"
+  timestamp   DateTime @default(now())
+  reason      String?  // Optional reason for the change
+  metadata    Json?    // Additional context
+
+  @@index([mandateId, timestamp])
+  @@index([changedBy, timestamp])
+  @@index([field, timestamp])
+  @@index([timestamp])
+}
+
+// System Monitoring Tables
+model SystemErrors {
+  id           String   @id @default(cuid())
+  errorCode    String   // Standardized error code
+  errorType    String   // "validation", "business", "system", "external"
+  severity     String   // "low", "medium", "high", "critical"
+  component    String   // Component where error occurred (e.g., "api", "agent", "payment")
+  agentId      String?
+  userId       String?
+  executionId  String?
+  requestId    String?  // RequestLog traceId
+  message      String
+  details      Json?    // Additional error details
+  stackTrace   String?  // Stack trace for debugging
+  resolved     Boolean  @default(false)
+  resolvedBy   String?  // User ID who resolved the error
+  resolvedAt   DateTime?
+  timestamp    DateTime @default(now())
+
+  @@index([errorCode, timestamp])
+  @@index([errorType, timestamp])
+  @@index([severity, timestamp])
+  @@index([component, timestamp])
+  @@index([agentId, timestamp])
+  @@index([userId, timestamp])
+  @@index([resolved, timestamp])
+  @@index([timestamp])
+}
+
+model SystemMetrics {
+  id           String   @id @default(cuid())
+  metric       String   // Metric name (e.g., "response_time", "error_rate", "active_users")
+  value        Float    // Metric value
+  component    String   // Component being measured
+  unit         String?  // Unit of measurement (e.g., "ms", "count", "percentage")
+  tags         Json?    // Additional tags for filtering/grouping
+  timestamp    DateTime @default(now())
+
+  @@index([metric, timestamp])
+  @@index([component, timestamp])
+  @@index([timestamp])
+}
