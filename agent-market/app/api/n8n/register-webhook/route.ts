@@ -49,8 +49,7 @@ export async function POST(req: NextRequest) {
           averageExecutionTime: 0,
         },
         // Schema fields will be added after database migration
-        // inputSchema: CommonAgentSchemas.webhook.input,
-        // outputSchema: CommonAgentSchemas.webhook.output,
+        // Note: Schema fields are set via update after migration
       },
     });
 
