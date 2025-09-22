@@ -86,13 +86,15 @@ export class MetricsCollector {
       });
 
       // Update agent computed fields
-      await this.updateAgentStats(executionData.agentId, executionData.status);
+      await this.updateAgentStats(executionData.agentId);
 
       // Update metrics aggregation
       await this.updateMetrics(executionData.agentId, executionData.status, executionData.duration);
 
       // Update user interaction
       await this.updateUserInteraction(executionData.userId, executionData.agentId, {
+        userId: executionData.userId,
+        agentId: executionData.agentId,
         isSuccessful: executionData.status === 'success'
       });
 
@@ -172,9 +174,8 @@ export class MetricsCollector {
   /**
    * Update agent computed stats
    */
-  private async updateAgentStats(agentId: string, status: string): Promise<void> {
+  private async updateAgentStats(agentId: string): Promise<void> {
     try {
-      const isSuccess = status === 'success';
       
       await prisma.agent.update({
         where: { id: agentId },
@@ -238,7 +239,7 @@ export class MetricsCollector {
             maxDuration: existingMetrics.maxDuration ? Math.max(existingMetrics.maxDuration, duration) : duration,
             totalCreditsConsumed: { increment: 50 }, // Standard cost
             avgCreditsPerExecution: existingMetrics.totalCreditsConsumed / (existingMetrics.totalExecutions + 1),
-            errorCounts: isError ? this.updateErrorCounts(existingMetrics.errorCounts, status) : undefined,
+            errorCounts: isError ? this.updateErrorCounts(existingMetrics.errorCounts as Record<string, number> | null, status) : undefined,
             updatedAt: new Date()
           }
         });
@@ -259,7 +260,7 @@ export class MetricsCollector {
             maxDuration: duration,
             totalCreditsConsumed: 50,
             avgCreditsPerExecution: 50,
-            errorCounts: isError ? { [status.toUpperCase()]: 1 } : null
+            errorCounts: isError ? { [status.toUpperCase()]: 1 } : undefined
           }
         });
       }
@@ -280,7 +281,7 @@ export class MetricsCollector {
   /**
    * Update error counts in JSON field
    */
-  private updateErrorCounts(currentCounts: any, status: string): any {
+  private updateErrorCounts(currentCounts: Record<string, number> | null, status: string): Record<string, number> {
     const counts = currentCounts || {};
     const errorKey = status.toUpperCase();
     counts[errorKey] = (counts[errorKey] || 0) + 1;

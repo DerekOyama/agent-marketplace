@@ -34,7 +34,7 @@ export class DataSanitizer {
     }
 
     // Sanitize the message
-    let sanitizedMessage = message
+    const sanitizedMessage = message
       // Remove file paths
       .replace(/\/[^\s]+/g, '/[PATH]')
       // Remove IP addresses
@@ -69,7 +69,7 @@ export class DataSanitizer {
   /**
    * Analyze input/output data without storing sensitive content
    */
-  analyzeInputOutput(data: any): {
+  analyzeInputOutput(data: unknown): {
     size: number;
     type: string;
     structure?: Record<string, unknown>;
@@ -97,11 +97,11 @@ export class DataSanitizer {
       // Analyze structure for objects
       let structure: Record<string, unknown> | undefined;
       if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        structure = this.analyzeObjectStructure(data);
+        structure = this.analyzeObjectStructure(data as Record<string, unknown>);
       }
 
       return { size, type, structure };
-    } catch (error) {
+    } catch {
       return { size: 0, type: 'error' };
     }
   }
@@ -109,7 +109,7 @@ export class DataSanitizer {
   /**
    * Analyze object structure without storing sensitive data
    */
-  private analyzeObjectStructure(obj: Record<string, unknown>, maxDepth: number = 3, currentDepth: number = 0): Record<string, unknown> {
+  private analyzeObjectStructure(obj: Record<string, unknown>, maxDepth = 3, currentDepth = 0): Record<string, unknown> {
     if (currentDepth >= maxDepth) {
       return { '[truncated]': '...' };
     }

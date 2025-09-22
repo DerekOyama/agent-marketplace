@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
   const metricsCollector = new MetricsCollector();
   const dataSanitizer = new DataSanitizer();
   const startTime = Date.now();
-  const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
     const { agentId, inputData } = await req.json();
     const userId = "demo-user"; // Using the same demo user system
+    const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Get user session info for tracking
     const userAgent = req.headers.get('user-agent') || 'unknown';
@@ -100,6 +100,9 @@ export async function POST(req: NextRequest) {
     // For now, we skip validation to maintain backward compatibility
     console.log('Input validation skipped - schema fields not yet available');
 
+    // Calculate execution time at the start
+    const executionTime = Date.now() - startTime;
+    
     // Execute the webhook
     console.log('Executing webhook:', agent.webhookUrl);
     console.log('Standardized input:', JSON.stringify(standardInput, null, 2));
@@ -107,8 +110,6 @@ export async function POST(req: NextRequest) {
     let response;
     let responseData;
     let parsedData: StandardAgentOutput;
-    const startTime = Date.now();
-    const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       response = await fetch(agent.webhookUrl, {
@@ -166,8 +167,9 @@ export async function POST(req: NextRequest) {
     } catch (fetchError) {
       console.error('Webhook fetch error:', fetchError);
       
+      // Use already calculated execution time
+      
       // Record error metrics
-      const executionTime = Date.now() - startTime;
       const sanitizedError = dataSanitizer.sanitizeError(fetchError instanceof Error ? fetchError : new Error('Unknown error'));
       
       await metricsCollector.recordExecution({
@@ -188,7 +190,8 @@ export async function POST(req: NextRequest) {
       });
 
       // Log error details
-      await metricsCollector.logExecution(executionId, {
+      await metricsCollector.logExecution({
+        executionId,
         agentId,
         userId,
         category: 'error',
@@ -261,8 +264,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-    // Calculate execution time
-    const executionTime = Date.now() - startTime;
+    // Use already calculated execution time for stats
     
     // Get current stats
     const currentStats = (agent.stats as Record<string, unknown>) || {};
@@ -335,7 +337,8 @@ export async function POST(req: NextRequest) {
     // Calculate actual credits consumed and get final balance
     let actualCreditsConsumed = 0;
     let finalBalance = user.creditBalanceCents;
-    const executionTime = Date.now() - startTime;
+
+    // Use already calculated execution time
 
     // Deduct credits only on successful execution
     if (response.ok) {
@@ -378,7 +381,8 @@ export async function POST(req: NextRequest) {
       });
 
       // Log execution success
-      await metricsCollector.logExecution(executionId, {
+      await metricsCollector.logExecution({
+        executionId,
         agentId,
         userId,
         category: 'execution',
@@ -424,7 +428,8 @@ export async function POST(req: NextRequest) {
       });
 
       // Log execution failure
-      await metricsCollector.logExecution(executionId, {
+      await metricsCollector.logExecution({
+        executionId,
         agentId,
         userId,
         category: 'error',
@@ -467,34 +472,34 @@ export async function POST(req: NextRequest) {
     console.error("N8n execution error:", error);
     
     // Record internal error metrics
-    const executionTime = Date.now() - startTime;
     const sanitizedError = dataSanitizer.sanitizeError(error instanceof Error ? error : new Error('Unknown error'));
     
     try {
       await metricsCollector.recordExecution({
         agentId: 'unknown',
         userId: 'demo-user',
-        executionId,
+        executionId: 'unknown',
         status: 'error',
-        duration: executionTime,
+        duration: 0,
         creditsConsumed: 0,
         errorCode: 'INTERNAL_ERROR',
         errorMessage: sanitizedError.message,
-        responseTime: executionTime,
+        responseTime: 0,
         sessionId: dataSanitizer.sanitizeSessionId('unknown'),
         userAgent: dataSanitizer.sanitizeUserAgent('unknown'),
         ipAddress: 'xxx.xxx.xxx.xxx'
       });
 
       // Log internal error
-      await metricsCollector.logExecution(executionId, {
+      await metricsCollector.logExecution({
+        executionId: 'unknown',
         agentId: 'unknown',
         userId: 'demo-user',
         category: 'error',
         level: 'error',
         message: 'Internal error during agent execution',
         context: {
-          executionTime,
+          executionTime: 0,
           errorCode: 'INTERNAL_ERROR',
           originalError: sanitizedError.message
         }
@@ -519,9 +524,9 @@ export async function POST(req: NextRequest) {
       success: false,
       data: {},
       metadata: {
-        executionId,
+        executionId: 'unknown',
         timestamp: new Date().toISOString(),
-        duration: executionTime
+        duration: 0
       },
       error: {
         code: "INTERNAL_ERROR",

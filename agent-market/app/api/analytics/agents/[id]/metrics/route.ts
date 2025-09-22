@@ -45,7 +45,7 @@ export async function GET(
     });
 
     // Aggregate data based on metric type
-    let aggregatedData: any = {};
+    let aggregatedData: Record<string, unknown> = {};
 
     switch (metric) {
       case 'executions':

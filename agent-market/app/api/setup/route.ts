@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { CommonAgentSchemas } from "../../../types/agent-schemas";
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   try {
     console.log("🚀 Starting database setup...");
 

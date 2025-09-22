@@ -29,7 +29,7 @@ export async function GET(
     }
 
     // Build where clause
-    const whereClause: any = { agentId };
+    const whereClause: Record<string, unknown> = { agentId };
     
     if (executionId) {
       whereClause.executionId = executionId;
