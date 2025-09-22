@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { CommonAgentSchemas } from "../../../types/agent-schemas";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     console.log("🚀 Starting database setup...");
 
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
         id: agent.id,
         name: agent.name,
         type: agent.type,
-        category: (agent.metadata as any)?.category
+        category: (agent.metadata as Record<string, unknown>)?.category as string
       })),
       totalCreated: agents.length
     });
@@ -217,7 +217,7 @@ export async function GET() {
         name: agent.name,
         type: agent.type,
         isActive: agent.isActive,
-        category: (agent.metadata as any)?.category
+        category: (agent.metadata as Record<string, unknown>)?.category as string
       })),
       total: agentCount
     });
