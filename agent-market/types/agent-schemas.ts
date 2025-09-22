@@ -62,6 +62,11 @@ export interface StandardAgentOutput {
     timestamp: string;
     duration: number;
     version?: string;
+    agentId?: string;
+    webhookUrl?: string;
+    responseSize?: number;
+    contentType?: string;
+    [key: string]: unknown; // Allow additional metadata fields
   };
   
   // Error information (if success is false)
@@ -76,6 +81,11 @@ export interface StandardAgentOutput {
     tokensUsed?: number;
     creditsConsumed?: number;
     apiCalls?: number;
+    remainingCredits?: number;
+    executionCostCents?: number;
+    httpStatus?: number;
+    httpStatusText?: string;
+    [key: string]: unknown; // Allow additional usage fields
   };
 }
 
