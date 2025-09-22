@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import { CommonAgentSchemas } from "../../../../types/agent-schemas";
 
 export async function POST(req: NextRequest) {
   try {

@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
     };
 
     // Validate input if schema exists (check for schema field existence for backward compatibility)
-    const agentWithSchema = agent as any; // Temporary cast during migration
+    const agentWithSchema = agent as typeof agent & { inputSchema?: AgentInputSchema };
     if (agentWithSchema.inputSchema) {
-      const validation = validateAgentInput(standardInput, agentWithSchema.inputSchema as AgentInputSchema);
+      const validation = validateAgentInput(standardInput, agentWithSchema.inputSchema);
       if (!validation.valid) {
         return NextResponse.json({
           success: false,
