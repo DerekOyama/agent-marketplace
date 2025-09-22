@@ -19,6 +19,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isReplenishing, setIsReplenishing] = useState(false);
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -56,6 +57,38 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
       });
     }
   }, [refreshTrigger, fetchBalance]);
+
+  const replenishCredits = async () => {
+    try {
+      setIsReplenishing(true);
+      setError(null);
+      
+      const res = await fetch("/api/credits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amountCents: 1000, // $10.00
+          operation: "add"
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.user) {
+        setUser(data.user);
+        onBalanceUpdate?.(data.user.creditBalanceCents);
+      } else {
+        setError(data.message || "Failed to replenish credits");
+        console.error("Credits replenish error:", data);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Network error";
+      setError(errorMessage);
+      console.error("Credits replenish error:", err);
+    } finally {
+      setIsReplenishing(false);
+    }
+  };
 
   const formatBalance = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -107,15 +140,34 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
           <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         )}
       </div>
-      <button
-        onClick={fetchBalance}
-        className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-        title="Refresh balance"
-      >
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
+      <div className="flex items-center space-x-1">
+        <button
+          onClick={fetchBalance}
+          className="text-xs text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
+          title="Refresh balance"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+        <button
+          onClick={replenishCredits}
+          disabled={isReplenishing}
+          className="text-xs bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white px-2 py-1 rounded transition-colors flex items-center space-x-1"
+          title="Add $10.00 credits"
+        >
+          {isReplenishing ? (
+            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>$10</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
