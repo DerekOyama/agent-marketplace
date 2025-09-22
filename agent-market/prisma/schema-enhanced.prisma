@@ -1,3 +1,6 @@
+// Enhanced Prisma Schema for Agent Metrics & Logs Tracking
+// This is a proposed schema - not yet applied to the database
+
 datasource db { 
   provider = "postgresql"
   url      = env("DATABASE_URL") 
@@ -7,6 +10,7 @@ generator client {
   provider = "prisma-client-js" 
 }
 
+// Existing User model (unchanged)
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -24,6 +28,7 @@ model User {
   agentInteractions UserAgentInteraction[]
 }
 
+// Enhanced Agent model
 model Agent {
   id        String   @id @default(cuid())
   name      String
@@ -57,43 +62,6 @@ model Agent {
   metrics       AgentMetrics[]
   logs          AgentLog[]
   userInteractions UserAgentInteraction[]
-}
-
-model Mandate {
-  id        String   @id @default(cuid())
-  userId    String
-  rulesJson Json
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id])
-}
-
-model Transaction {
-  id          String   @id @default(cuid())
-  userId      String
-  agentId     String
-  amountCents Int
-  currency    String   @default("USD")
-  status      String   @default("pending")
-  stripePi    String?
-  requestJson Json?
-  receiptJson Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user  User  @relation(fields: [userId], references: [id])
-  agent Agent @relation(fields: [agentId], references: [id])
-  logs  AuditLog[]
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  txId      String
-  actor     String
-  event     String
-  payload   Json
-  createdAt DateTime @default(now())
-  transaction Transaction @relation(fields: [txId], references: [id])
 }
 
 // NEW: Detailed execution tracking
@@ -242,4 +210,42 @@ model UserAgentInteraction {
   @@unique([userId, agentId])
   @@index([userId, lastExecutedAt])
   @@index([agentId, totalExecutions])
+}
+
+// Existing models (unchanged)
+model Mandate {
+  id        String   @id @default(cuid())
+  userId    String
+  rulesJson Json
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  agentId     String
+  amountCents Int
+  currency    String   @default("USD")
+  status      String   @default("pending")
+  stripePi    String?
+  requestJson Json?
+  receiptJson Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user  User  @relation(fields: [userId], references: [id])
+  agent Agent @relation(fields: [agentId], references: [id])
+  logs  AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  txId      String
+  actor     String
+  event     String
+  payload   Json
+  createdAt DateTime @default(now())
+  transaction Transaction @relation(fields: [txId], references: [id])
 }

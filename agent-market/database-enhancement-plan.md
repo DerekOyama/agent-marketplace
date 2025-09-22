@@ -1,102 +1,32 @@
-datasource db { 
-  provider = "postgresql"
-  url      = env("DATABASE_URL") 
-}
+# Database Enhancement Plan: Agent Metrics & Logs Tracking
 
-generator client { 
-  provider = "prisma-client-js" 
-}
+## 🎯 Goals
+1. **Track agent performance metrics** (success rate, response time, usage patterns)
+2. **Log agent executions** with metadata but without sensitive data
+3. **Monitor user behavior** and agent popularity
+4. **Enable analytics** for agent optimization and marketplace insights
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  creditBalanceCents Int      @default(1000) // $10.00 in cents
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Existing relations
-  mandates      Mandate[]
-  transactions  Transaction[]
-  
-  // New relations for metrics tracking
-  executions    AgentExecution[]
-  logs          AgentLog[]
-  agentInteractions UserAgentInteraction[]
-}
+## 📊 Current State Analysis
 
-model Agent {
-  id        String   @id @default(cuid())
-  name      String
-  description String?
-  quoteUrl  String
-  runUrl    String
-  token     String
-  type      String   @default("legacy") // "legacy" or "n8n"
-  n8nWorkflowId String?
-  n8nInstanceUrl String?
-  webhookUrl String?
-  triggerType String? // "webhook", "manual", "schedule"
-  isActive  Boolean  @default(true)
-  metadata  Json?
-  pricing   Json?
-  stats     Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // New computed fields for performance
-  lastExecutedAt  DateTime?
-  totalExecutions Int       @default(0)
-  avgRating       Float?    // Computed from UserAgentInteraction
-  totalUsers      Int       @default(0)
-  
-  // Existing relations
-  transactions Transaction[]
-  
-  // New relations for metrics tracking
-  executions    AgentExecution[]
-  metrics       AgentMetrics[]
-  logs          AgentLog[]
-  userInteractions UserAgentInteraction[]
-}
+### ✅ Existing Capabilities
+- Basic agent stats in `Agent.stats` JSON field
+- Transaction tracking via `Transaction` and `AuditLog` tables
+- Credit balance management in `User` table
+- Basic execution metrics (counts, timing)
 
-model Mandate {
-  id        String   @id @default(cuid())
-  userId    String
-  rulesJson Json
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id])
-}
+### ❌ Missing Capabilities
+- Detailed execution logs without sensitive data
+- Historical metrics trends over time
+- User behavior analytics
+- Performance monitoring and alerting
+- Error categorization and tracking
+- Input/output data patterns (anonymized)
+- Agent comparison and ranking
 
-model Transaction {
-  id          String   @id @default(cuid())
-  userId      String
-  agentId     String
-  amountCents Int
-  currency    String   @default("USD")
-  status      String   @default("pending")
-  stripePi    String?
-  requestJson Json?
-  receiptJson Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user  User  @relation(fields: [userId], references: [id])
-  agent Agent @relation(fields: [agentId], references: [id])
-  logs  AuditLog[]
-}
+## 🗄️ Proposed Database Schema
 
-model AuditLog {
-  id        String   @id @default(cuid())
-  txId      String
-  actor     String
-  event     String
-  payload   Json
-  createdAt DateTime @default(now())
-  transaction Transaction @relation(fields: [txId], references: [id])
-}
-
-// NEW: Detailed execution tracking
+### 1. **AgentExecution** Table
+```prisma
 model AgentExecution {
   id              String   @id @default(cuid())
   agentId         String
@@ -139,8 +69,10 @@ model AgentExecution {
   @@index([status, createdAt])
   @@index([executionId])
 }
+```
 
-// NEW: Time-series metrics aggregation
+### 2. **AgentMetrics** Table (Time-series data)
+```prisma
 model AgentMetrics {
   id              String   @id @default(cuid())
   agentId         String
@@ -180,8 +112,10 @@ model AgentMetrics {
   @@index([agentId, date])
   @@index([date])
 }
+```
 
-// NEW: Detailed execution logs
+### 3. **AgentLog** Table (Detailed execution logs)
+```prisma
 model AgentLog {
   id              String   @id @default(cuid())
   executionId     String   // Links to AgentExecution
@@ -208,8 +142,10 @@ model AgentLog {
   @@index([agentId, timestamp])
   @@index([category, level, timestamp])
 }
+```
 
-// NEW: User behavior and interaction tracking
+### 4. **UserAgentInteraction** Table (User behavior tracking)
+```prisma
 model UserAgentInteraction {
   id              String   @id @default(cuid())
   userId          String
@@ -243,3 +179,108 @@ model UserAgentInteraction {
   @@index([userId, lastExecutedAt])
   @@index([agentId, totalExecutions])
 }
+```
+
+### 5. **Updated Agent Table**
+```prisma
+model Agent {
+  // ... existing fields ...
+  
+  // New relations
+  executions      AgentExecution[]
+  metrics         AgentMetrics[]
+  logs            AgentLog[]
+  userInteractions UserAgentInteraction[]
+  
+  // Computed fields (updated via triggers or background jobs)
+  lastExecutedAt  DateTime?
+  totalExecutions Int       @default(0)
+  avgRating       Float?    // Computed from UserAgentInteraction
+  totalUsers      Int       @default(0)
+}
+```
+
+## 🔄 Data Flow & Collection Strategy
+
+### 1. **Execution Tracking**
+- Capture every agent execution in `AgentExecution`
+- Log detailed execution data in `AgentLog`
+- Update real-time metrics in `AgentMetrics`
+- Track user interactions in `UserAgentInteraction`
+
+### 2. **Data Anonymization**
+- **Input/Output**: Store only size, type, and structure patterns
+- **IP Addresses**: Store only first 3 octets (e.g., 192.168.1.xxx)
+- **User Data**: Use session IDs, not personal information
+- **Error Messages**: Sanitize to remove sensitive paths/tokens
+
+### 3. **Metrics Aggregation**
+- **Real-time**: Update `AgentMetrics` on each execution
+- **Hourly**: Aggregate metrics by hour for detailed analysis
+- **Daily**: Aggregate metrics by day for long-term trends
+- **Background Jobs**: Clean up old logs, compute derived metrics
+
+## 📈 Analytics Capabilities
+
+### 1. **Agent Performance Dashboard**
+- Success rate trends over time
+- Response time percentiles
+- Error rate by category
+- Usage patterns and peak times
+
+### 2. **User Behavior Analytics**
+- Most popular agents
+- User retention and repeat usage
+- Agent discovery patterns
+- Feedback and rating trends
+
+### 3. **Marketplace Insights**
+- Agent comparison metrics
+- Pricing optimization data
+- Feature usage statistics
+- Performance benchmarking
+
+## 🚀 Implementation Phases
+
+### Phase 1: Core Tables
+1. Create `AgentExecution` table
+2. Update existing execution endpoints to log data
+3. Add basic metrics collection
+
+### Phase 2: Analytics Tables
+1. Create `AgentMetrics` and `AgentLog` tables
+2. Implement metrics aggregation
+3. Add user interaction tracking
+
+### Phase 3: Advanced Features
+1. Create `UserAgentInteraction` table
+2. Implement background jobs for data processing
+3. Add analytics API endpoints
+
+### Phase 4: Optimization
+1. Add database indexes for performance
+2. Implement data retention policies
+3. Add monitoring and alerting
+
+## 🔒 Privacy & Security Considerations
+
+### Data Minimization
+- Only collect necessary metrics
+- Anonymize all personal data
+- Implement data retention policies
+- Regular data cleanup
+
+### Access Control
+- Role-based access to analytics
+- Audit logs for data access
+- Encrypt sensitive metrics
+- Regular security reviews
+
+## 📊 Expected Benefits
+
+1. **Agent Optimization**: Data-driven improvements
+2. **User Experience**: Better agent recommendations
+3. **Marketplace Health**: Performance monitoring
+4. **Business Intelligence**: Usage patterns and trends
+5. **Debugging**: Detailed execution logs
+6. **Compliance**: Audit trails and data governance

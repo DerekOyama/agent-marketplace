@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { StandardAgentInput, StandardAgentOutput } from "../../../../types/agent-schemas";
+import { MetricsCollector } from "../../../../lib/metrics-collector";
+import { DataSanitizer } from "../../../../lib/data-sanitizer";
 
 export async function POST(req: NextRequest) {
+  const metricsCollector = new MetricsCollector();
+  const dataSanitizer = new DataSanitizer();
+  const startTime = Date.now();
+  const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
     const { agentId, inputData } = await req.json();
     const userId = "demo-user"; // Using the same demo user system
@@ -12,7 +19,7 @@ export async function POST(req: NextRequest) {
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     const sessionId = req.headers.get('x-session-id') || `${clientIP}-${userAgent}`.slice(0, 50);
 
-    console.log('Executing n8n workflow:', { agentId, inputData, sessionId, userId });
+    console.log('Executing n8n workflow:', { agentId, inputData, sessionId, userId, executionId });
 
     if (!agentId) {
       return NextResponse.json(
@@ -159,6 +166,42 @@ export async function POST(req: NextRequest) {
     } catch (fetchError) {
       console.error('Webhook fetch error:', fetchError);
       
+      // Record error metrics
+      const executionTime = Date.now() - startTime;
+      const sanitizedError = dataSanitizer.sanitizeError(fetchError instanceof Error ? fetchError : new Error('Unknown error'));
+      
+      await metricsCollector.recordExecution({
+        agentId,
+        userId,
+        executionId,
+        status: 'error',
+        duration: executionTime,
+        creditsConsumed: 0,
+        errorCode: sanitizedError.code,
+        errorMessage: sanitizedError.message,
+        inputSize: JSON.stringify(inputData).length,
+        inputType: 'json',
+        responseTime: executionTime,
+        sessionId: dataSanitizer.sanitizeSessionId(sessionId),
+        userAgent: dataSanitizer.sanitizeUserAgent(userAgent),
+        ipAddress: dataSanitizer.anonymizeIP(clientIP)
+      });
+
+      // Log error details
+      await metricsCollector.logExecution(executionId, {
+        agentId,
+        userId,
+        category: 'error',
+        level: 'error',
+        message: 'Agent execution failed with network error',
+        context: {
+          agentName: agent.name,
+          executionTime,
+          errorCode: sanitizedError.code,
+          webhookUrl: agent.webhookUrl
+        }
+      });
+
       // Create standardized error response
       const errorResponse: StandardAgentOutput = {
         success: false,
@@ -166,7 +209,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           executionId,
           timestamp: new Date().toISOString(),
-          duration: Date.now() - startTime
+          duration: executionTime
         },
         error: {
           code: "EXECUTION_ERROR",
@@ -292,6 +335,7 @@ export async function POST(req: NextRequest) {
     // Calculate actual credits consumed and get final balance
     let actualCreditsConsumed = 0;
     let finalBalance = user.creditBalanceCents;
+    const executionTime = Date.now() - startTime;
 
     // Deduct credits only on successful execution
     if (response.ok) {
@@ -312,6 +356,42 @@ export async function POST(req: NextRequest) {
           }
         });
       }
+
+      // Record successful execution metrics
+      await metricsCollector.recordExecution({
+        agentId,
+        userId,
+        executionId,
+        status: 'success',
+        duration: executionTime,
+        creditsConsumed: actualCreditsConsumed,
+        httpStatus: response.status,
+        inputSize: JSON.stringify(inputData).length,
+        outputSize: responseData?.length || 0,
+        inputType: 'json',
+        outputType: 'json',
+        responseTime: executionTime,
+        processingTime: executionTime,
+        sessionId: dataSanitizer.sanitizeSessionId(sessionId),
+        userAgent: dataSanitizer.sanitizeUserAgent(userAgent),
+        ipAddress: dataSanitizer.anonymizeIP(clientIP)
+      });
+
+      // Log execution success
+      await metricsCollector.logExecution(executionId, {
+        agentId,
+        userId,
+        category: 'execution',
+        level: 'info',
+        message: 'Agent execution completed successfully',
+        context: {
+          agentName: agent.name,
+          executionTime,
+          creditsConsumed: actualCreditsConsumed,
+          responseSize: responseData?.length || 0
+        }
+      });
+
     } else {
       // On failed execution, get current balance without deducting
       const currentUser = await prisma.user.findUnique({
@@ -319,6 +399,44 @@ export async function POST(req: NextRequest) {
         select: { creditBalanceCents: true }
       });
       finalBalance = currentUser?.creditBalanceCents || user.creditBalanceCents;
+
+      // Record failed execution metrics
+      const errorCode = response.status >= 500 ? 'SERVER_ERROR' : 
+                       response.status === 408 ? 'TIMEOUT' : 
+                       response.status === 404 ? 'NOT_FOUND' : 'CLIENT_ERROR';
+
+      await metricsCollector.recordExecution({
+        agentId,
+        userId,
+        executionId,
+        status: 'failed',
+        duration: executionTime,
+        creditsConsumed: 0,
+        httpStatus: response.status,
+        errorCode,
+        errorMessage: `HTTP ${response.status}: ${response.statusText}`,
+        inputSize: JSON.stringify(inputData).length,
+        inputType: 'json',
+        responseTime: executionTime,
+        sessionId: dataSanitizer.sanitizeSessionId(sessionId),
+        userAgent: dataSanitizer.sanitizeUserAgent(userAgent),
+        ipAddress: dataSanitizer.anonymizeIP(clientIP)
+      });
+
+      // Log execution failure
+      await metricsCollector.logExecution(executionId, {
+        agentId,
+        userId,
+        category: 'error',
+        level: 'error',
+        message: 'Agent execution failed',
+        context: {
+          agentName: agent.name,
+          executionTime,
+          httpStatus: response.status,
+          errorCode
+        }
+      });
     }
 
     // Enhance the parsed data with execution metadata
@@ -348,6 +466,43 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("N8n execution error:", error);
     
+    // Record internal error metrics
+    const executionTime = Date.now() - startTime;
+    const sanitizedError = dataSanitizer.sanitizeError(error instanceof Error ? error : new Error('Unknown error'));
+    
+    try {
+      await metricsCollector.recordExecution({
+        agentId: 'unknown',
+        userId: 'demo-user',
+        executionId,
+        status: 'error',
+        duration: executionTime,
+        creditsConsumed: 0,
+        errorCode: 'INTERNAL_ERROR',
+        errorMessage: sanitizedError.message,
+        responseTime: executionTime,
+        sessionId: dataSanitizer.sanitizeSessionId('unknown'),
+        userAgent: dataSanitizer.sanitizeUserAgent('unknown'),
+        ipAddress: 'xxx.xxx.xxx.xxx'
+      });
+
+      // Log internal error
+      await metricsCollector.logExecution(executionId, {
+        agentId: 'unknown',
+        userId: 'demo-user',
+        category: 'error',
+        level: 'error',
+        message: 'Internal error during agent execution',
+        context: {
+          executionTime,
+          errorCode: 'INTERNAL_ERROR',
+          originalError: sanitizedError.message
+        }
+      });
+    } catch (metricsError) {
+      console.error("Failed to record error metrics:", metricsError);
+    }
+    
     // Get current user balance for error response
     let currentBalance = 0;
     try {
@@ -364,15 +519,15 @@ export async function POST(req: NextRequest) {
       success: false,
       data: {},
       metadata: {
-        executionId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        executionId,
         timestamp: new Date().toISOString(),
-        duration: 0
+        duration: executionTime
       },
       error: {
         code: "INTERNAL_ERROR",
         message: "Failed to execute n8n workflow",
         details: {
-          originalError: error instanceof Error ? error.message : "Unknown error"
+          originalError: sanitizedError.message
         }
       },
       usage: {
