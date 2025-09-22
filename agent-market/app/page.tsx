@@ -151,6 +151,13 @@ export default function Home() {
             webhookUrl?: string; 
             creditsDeducted?: number;
             remainingCredits?: number;
+            usage?: {
+              creditsConsumed?: number;
+              remainingCredits?: number;
+              executionCostCents?: number;
+              httpStatus?: number;
+              httpStatusText?: string;
+            };
             error?: string;
             message?: string;
             requiredCredits?: number;
