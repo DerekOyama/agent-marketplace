@@ -100,10 +100,10 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const actions = isN8nAgent ? [
     // Execute button - always available for authenticated users
     { 
-      name: "Execute Agent", 
+      name: "Run Agent", 
       action: "execute", 
       color: "bg-blue-700 hover:bg-blue-800",
-      description: "Execute this agent with your input"
+      description: "Run this agent with your input"
     },
     { 
       name: "View Requirements", 

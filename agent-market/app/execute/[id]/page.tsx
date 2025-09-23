@@ -14,7 +14,12 @@ interface Agent {
   triggerType?: string;
   pricing?: Record<string, unknown>;
   pricePerExecutionCents?: number;
-  stats?: Record<string, unknown>;
+  stats?: {
+    totalExecutions?: number;
+    avgRating?: number;
+    lastExecutedAt?: string;
+    successRate?: number;
+  };
 }
 
 interface InputField {
@@ -38,6 +43,12 @@ export default function ExecuteAgentPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [inputFields, setInputFields] = useState<InputField[]>([]);
   const [exampleInput, setExampleInput] = useState<string>("");
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [agentRequirements, setAgentRequirements] = useState<{
+    input: { description: string; example: unknown };
+    output: { description: string; example: unknown };
+    usage: { method: string; endpoint: string; headers: Record<string, string>; body: unknown };
+  } | null>(null);
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -100,6 +111,9 @@ export default function ExecuteAgentPage() {
         // Store simplified example input
         const example = data.documentation.input.example;
         setExampleInput(simplifyExampleInput(example));
+        
+        // Store full requirements data
+        setAgentRequirements(data.documentation);
         
         // Parse input requirements to create form fields
         const fields = parseInputRequirements(data.documentation.input.description);
@@ -259,8 +273,8 @@ export default function ExecuteAgentPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Execute Agent</h1>
-              <p className="text-gray-800 mt-1">Run {agent.name} with your custom input</p>
+              <h1 className="text-3xl font-bold text-gray-900">Run Agent</h1>
+              <p className="text-gray-800 mt-1">Execute {agent.name} with your custom input</p>
             </div>
             <Link
               href="/"
@@ -294,6 +308,51 @@ export default function ExecuteAgentPage() {
                   </div>
                 </div>
 
+                {/* Agent Metrics */}
+                {agent.stats && (
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Agent Metrics</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      {agent.stats.totalExecutions !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{agent.stats.totalExecutions}</div>
+                          <div className="text-xs text-gray-600">Total Executions</div>
+                        </div>
+                      )}
+                      {agent.stats.avgRating !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{agent.stats.avgRating.toFixed(1)}</div>
+                          <div className="text-xs text-gray-600">Avg Rating</div>
+                        </div>
+                      )}
+                      {agent.stats.successRate !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">{agent.stats.successRate}%</div>
+                          <div className="text-xs text-gray-600">Success Rate</div>
+                        </div>
+                      )}
+                      {agent.stats.lastExecutedAt && (
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-gray-800">
+                            {new Date(agent.stats.lastExecutedAt).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-600">Last Executed</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requirements Button */}
+                <div className="border-t border-gray-200 pt-4">
+                  <button
+                    onClick={() => setShowRequirements(true)}
+                    className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+                  >
+                    View Input/Output Requirements
+                  </button>
+                </div>
+
                 {exampleInput && (
                   <div className="border-t border-gray-200 pt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Example Input</h4>
@@ -309,7 +368,7 @@ export default function ExecuteAgentPage() {
           {/* Execution Form */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Provide Input</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Run Agent</h2>
               
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -369,7 +428,7 @@ export default function ExecuteAgentPage() {
                     disabled={executing}
                     className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
-                    {executing ? 'Executing...' : `Execute Agent ($${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
+                    {executing ? 'Running...' : `Run Agent ($${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
                   </button>
                 </div>
               </form>
@@ -377,6 +436,84 @@ export default function ExecuteAgentPage() {
           </div>
         </div>
       </div>
+
+      {/* Requirements Modal */}
+      {showRequirements && agentRequirements && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Agent Requirements - {agent.name}
+              </h3>
+              <button
+                onClick={() => setShowRequirements(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Input Requirements */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-3">Input Requirements</h4>
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-gray-800 mb-3">{agentRequirements.input.description}</p>
+                  <div className="bg-white rounded p-3">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Example Input:</h5>
+                    <pre className="text-xs text-gray-800 whitespace-pre-wrap">
+                      {JSON.stringify(agentRequirements.input.example, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Output Requirements */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-3">Expected Output</h4>
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-gray-800 mb-3">{agentRequirements.output.description}</p>
+                  <div className="bg-white rounded p-3">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Example Output:</h5>
+                    <pre className="text-xs text-gray-800 whitespace-pre-wrap">
+                      {JSON.stringify(agentRequirements.output.example, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* API Usage */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="text-lg font-medium text-gray-900 mb-3">API Usage</h4>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Endpoint:</h5>
+                    <code className="text-sm text-gray-800 bg-white px-2 py-1 rounded">
+                      {agentRequirements.usage.method} {agentRequirements.usage.endpoint}
+                    </code>
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Headers:</h5>
+                    <code className="text-sm text-gray-800 bg-white px-2 py-1 rounded">
+                      Content-Type: {agentRequirements.usage.headers["Content-Type"]}
+                    </code>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Request Body:</h5>
+                  <pre className="text-xs text-gray-800 bg-white p-3 rounded whitespace-pre-wrap">
+                    {JSON.stringify(agentRequirements.usage.body, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
