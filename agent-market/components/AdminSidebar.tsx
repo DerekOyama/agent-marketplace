@@ -68,7 +68,7 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate }: AdminSideb
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Admin password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-500"
                   required
                 />
                 <button
@@ -97,19 +97,9 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate }: AdminSideb
               {/* Menu Items */}
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-                  Credit Management
+                  Admin Tools
                 </h3>
                 
-                <button
-                  onClick={() => handleMenuClick('credit-history')}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-3"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <span>Credit History</span>
-                </button>
-
                 <button
                   onClick={() => handleMenuClick('stripe-test')}
                   className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-3"
@@ -118,20 +108,6 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate }: AdminSideb
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   <span>Stripe Testing</span>
-                </button>
-
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 mt-6">
-                  System Tools
-                </h3>
-
-                <button
-                  onClick={() => handleMenuClick('n8n-connect')}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-3"
-                >
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                  <span>Connect N8N</span>
                 </button>
 
                 <button
