@@ -14,15 +14,27 @@ export default function FloatingSidebar({ onNavigate, isAdmin = false }: Floatin
     onNavigate(path);
   };
 
+  const handleSidebarClick = () => {
+    if (!isExpanded) {
+      setIsExpanded(true);
+    }
+  };
+
   return (
     <div className="fixed left-0 top-0 h-full z-30">
-      <div className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 h-full ${
-        isExpanded ? 'w-64' : 'w-16'
-      }`}>
+      <div 
+        className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 h-full cursor-pointer ${
+          isExpanded ? 'w-64' : 'w-16'
+        }`}
+        onClick={handleSidebarClick}
+      >
         
         {/* Toggle Button */}
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
           className="w-full p-4 flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           <svg className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${
@@ -34,9 +46,12 @@ export default function FloatingSidebar({ onNavigate, isAdmin = false }: Floatin
 
         {/* Menu Items */}
         <div className="px-2 pb-2">
-          {/* Connect N8N */}
+          {/* Connect N8N - Always visible */}
           <button
-            onClick={() => handleMenuClick('n8n-connect')}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMenuClick('n8n-connect');
+            }}
             className={`w-full p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center ${
               isExpanded ? 'space-x-3' : 'justify-center'
             }`}
@@ -50,22 +65,21 @@ export default function FloatingSidebar({ onNavigate, isAdmin = false }: Floatin
             )}
           </button>
 
-          {/* Admin Panel - Only visible to admins */}
-          {isAdmin && (
+          {/* Admin Panel - Only visible to admins and when expanded */}
+          {isAdmin && isExpanded && (
             <button
-              onClick={() => handleMenuClick('admin-panel')}
-              className={`w-full p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center ${
-                isExpanded ? 'space-x-3' : 'justify-center'
-              }`}
-              title={!isExpanded ? "Admin Panel" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuClick('admin-panel');
+              }}
+              className="w-full p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-3"
+              title="Admin Panel"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              {isExpanded && (
-                <span className="text-sm font-medium text-gray-700">Admin Panel</span>
-              )}
+              <span className="text-sm font-medium text-gray-700">Admin Panel</span>
             </button>
           )}
 

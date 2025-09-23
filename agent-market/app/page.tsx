@@ -379,7 +379,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ml-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ marginLeft: '64px' }}>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center py-8">
             <div className="mb-4 lg:mb-0">
               <h1 className="text-4xl font-bold mb-2">AI Agent Marketplace</h1>
@@ -408,8 +408,8 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Top Navigation */}
-            <div className="flex items-center space-x-4">
+            {/* Top Navigation - Sign In & Wallet */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
               <CreditBalance 
                 onBalanceUpdate={setCreditBalance}
                 refreshTrigger={creditRefreshTrigger}
