@@ -20,6 +20,13 @@ function CreditPurchaseSuccessContent() {
       if (window.opener) {
         window.opener.postMessage({ type: 'CREDIT_PURCHASE_COMPLETE', sessionId }, '*');
       }
+      
+      // Also refresh the current page's balance if not in popup
+      // The webhook should have processed the payment by now
+      setTimeout(() => {
+        // Trigger a page refresh to show updated balance
+        window.location.reload();
+      }, 2000);
     } else {
       setStatus('error');
       setMessage('Invalid session. Please contact support if you were charged.');

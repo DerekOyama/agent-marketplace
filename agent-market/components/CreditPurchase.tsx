@@ -61,11 +61,9 @@ export default function CreditPurchase({ onPurchaseComplete, onBalanceUpdate }: 
       if (data.success && data.session?.url) {
         window.open(data.session.url, '_blank');
         
-        // In test mode, credits are added immediately, so refresh the UI
-        setTimeout(() => {
-          onPurchaseComplete?.();
-          onBalanceUpdate?.();
-        }, 1000); // Wait 1 second for the backend to process
+        // Credits will be added after Stripe processes the payment
+        // The success page will handle refreshing the balance
+        console.log("Stripe checkout opened - credits will be added after payment confirmation");
       }
     } catch (error) {
       setResult({

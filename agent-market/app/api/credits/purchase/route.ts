@@ -63,44 +63,9 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // For testing: immediately process the purchase since webhooks don't work in test mode
-    // In production, this would be handled by the webhook
-    if (process.env.NODE_ENV === 'development' || !process.env.STRIPE_WEBHOOK_SECRET) {
-      try {
-        const { CreditManager } = await import("../../../../lib/credit-manager");
-        
-        // Simulate successful payment and add credits
-        await prisma.creditPurchase.update({
-          where: { id: creditPurchase.id },
-          data: {
-            status: "completed",
-            completedAt: new Date(),
-            stripePaymentIntentId: "test_payment_intent_" + Date.now()
-          }
-        });
-
-        // Add credits to user account
-        const creditResult = await CreditManager.addCredits({
-          userId,
-          amountCents: creditsToPurchase,
-          type: "purchase",
-          description: `Credit purchase - ${creditsToPurchase} credits`,
-          referenceId: creditPurchase.id,
-          referenceType: "purchase",
-          creditPurchaseId: creditPurchase.id,
-          metadata: {
-            purchaseAmount: amountCents,
-            currency,
-            stripeCheckoutSessionId: session.id,
-            testMode: true
-          }
-        });
-
-        console.log("Test mode: Credits added immediately", creditResult);
-      } catch (error) {
-        console.error("Failed to add credits in test mode:", error);
-      }
-    }
+    // Note: Credits will only be added when Stripe webhook confirms payment
+    // This ensures users can't get credits without actually paying
+    console.log(`Credit purchase created: ${creditPurchase.id} - Credits will be added after Stripe confirms payment`);
 
     return NextResponse.json({
       success: true,
