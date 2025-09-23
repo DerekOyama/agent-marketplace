@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    const { webhookUrl, name } = await req.json();
+    const { webhookUrl, name, inputRequirements, pricePerExecutionCents } = await req.json();
 
-    console.log('Registering webhook as agent:', { webhookUrl, name });
+    console.log('Registering webhook as agent:', { webhookUrl, name, inputRequirements, pricePerExecutionCents });
 
     if (!webhookUrl) {
       return NextResponse.json(
@@ -19,11 +19,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { error: "Agent name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!inputRequirements || !inputRequirements.trim()) {
+      return NextResponse.json(
+        { error: "Input requirements are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!pricePerExecutionCents || pricePerExecutionCents < 0) {
+      return NextResponse.json(
+        { error: "Valid price per execution is required" },
+        { status: 400 }
+      );
+    }
+
     // Create a new agent based on the webhook
     const agent = await prisma.agent.create({
       data: {
-        name: name || "N8n Webhook Agent",
-        description: `N8n webhook agent: ${webhookUrl} - Uses standardized JSON input/output format`,
+        name: name.trim(),
+        description: `N8n webhook agent: ${webhookUrl} - ${inputRequirements.trim()}`,
         quoteUrl: webhookUrl, // Use webhook URL as quote URL
         runUrl: webhookUrl,   // Use webhook URL as run URL
         token: "n8n-webhook-token", // Generate a token for n8n agents
@@ -34,6 +55,8 @@ export async function POST(req: NextRequest) {
         triggerType: "webhook",
         isActive: true,
         ownerId: userId,
+        inputRequirements: inputRequirements.trim(),
+        pricePerExecutionCents: pricePerExecutionCents,
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n"],
@@ -41,12 +64,16 @@ export async function POST(req: NextRequest) {
           author: "n8n",
           documentation: webhookUrl,
           inputFormat: "standardized",
-          outputFormat: "standardized"
+          outputFormat: "standardized",
+          inputRequirements: inputRequirements.trim(),
+          pricePerExecutionCents: pricePerExecutionCents,
+          uploadedBy: userId,
+          uploadedAt: new Date().toISOString()
         },
         pricing: {
-          pricePerExecution: 0.01,
+          pricePerExecution: pricePerExecutionCents / 100, // Convert back to dollars for display
           currency: "USD",
-          freeExecutions: 100,
+          freeExecutions: 0, // No free executions for paid agents
         },
         stats: {
           totalExecutions: 0,
@@ -54,8 +81,6 @@ export async function POST(req: NextRequest) {
           failedExecutions: 0,
           averageExecutionTime: 0,
         },
-        // Schema fields will be added after database migration
-        // Note: Schema fields are set via update after migration
       },
     });
 

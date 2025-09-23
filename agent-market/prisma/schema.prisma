@@ -50,6 +50,8 @@ model Agent {
   totalUsers       Int                    @default(0)
   inputSchema      Json?
   outputSchema     Json?
+  inputRequirements String?               // Human-readable input description for LLM
+  pricePerExecutionCents Int?             // Price in cents per execution
   executions       AgentExecution[]
   logs             AgentLog[]
   metrics          AgentMetrics[]

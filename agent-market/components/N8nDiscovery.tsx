@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 interface N8nInstance {
   url: string;
@@ -17,14 +18,18 @@ interface N8nInstance {
 }
 
 export default function N8nDiscovery() {
+  const { status } = useSession();
   const [webhookUrl, setWebhookUrl] = useState("");
   const [agentName, setAgentName] = useState("");
+  const [inputRequirements, setInputRequirements] = useState("");
+  const [pricePerExecution, setPricePerExecution] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [instanceName, setInstanceName] = useState("");
   const [loading, setLoading] = useState(false);
   const [instance, setInstance] = useState<N8nInstance | null>(null);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"webhook" | "api">("webhook");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const testWebhook = async () => {
     if (!webhookUrl) {
@@ -127,6 +132,21 @@ export default function N8nDiscovery() {
       return;
     }
 
+    if (!agentName.trim()) {
+      setError("Please enter an agent name");
+      return;
+    }
+
+    if (!inputRequirements.trim()) {
+      setError("Please describe what inputs your agent needs");
+      return;
+    }
+
+    if (!pricePerExecution || isNaN(Number(pricePerExecution)) || Number(pricePerExecution) < 0) {
+      setError("Please enter a valid price per execution (in dollars)");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -136,16 +156,29 @@ export default function N8nDiscovery() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           webhookUrl,
-          name: agentName || "N8n Webhook Agent",
+          name: agentName.trim(),
+          inputRequirements: inputRequirements.trim(),
+          pricePerExecutionCents: Math.round(Number(pricePerExecution) * 100), // Convert to cents
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert(`Successfully registered webhook as agent!`);
-        // Refresh the page to show new agents
-        window.location.reload();
+        setShowSuccess(true);
+        setInstance(null); // Clear the instance to reset the form
+        // Reset form
+        setWebhookUrl("");
+        setAgentName("");
+        setInputRequirements("");
+        setPricePerExecution("");
+        setApiKey("");
+        setInstanceName("");
+        
+        // Hide success animation after 3 seconds
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
       } else {
         setError(data.error || "Failed to register webhook as agent");
       }
@@ -156,8 +189,72 @@ export default function N8nDiscovery() {
     }
   };
 
+  // Show sign-in prompt if not authenticated
+  if (status === "unauthenticated") {
+    return (
+      <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6">
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Sign In Required</h3>
+          <p className="text-gray-600 mb-6">
+            Please sign in with your Google account to create and manage n8n agents.
+          </p>
+          <button
+            onClick={() => signIn("google")}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading if session is loading
+  if (status === "loading") {
+    return (
+      <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6">
+    <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6 relative">
+      {/* Success Confetti Animation */}
+      {showSuccess && (
+        <div className="absolute inset-0 bg-green-50 bg-opacity-95 rounded-xl flex items-center justify-center z-10">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-green-900 mb-2">Agent Created Successfully!</h3>
+            <p className="text-green-700">Your n8n agent is now live in the marketplace</p>
+            <div className="mt-4 flex justify-center space-x-2">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 bg-green-400 rounded-full animate-ping"
+                  style={{
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: '1s'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,6 +323,43 @@ export default function N8nDiscovery() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Input Requirements *
+            </label>
+            <textarea
+              value={inputRequirements}
+              onChange={(e) => setInputRequirements(e.target.value)}
+              placeholder="Describe what inputs your agent needs. For example: 'Email address, message content, and recipient name' or 'Product name, price, and description'"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This helps users understand what to provide when using your agent
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Price Per Execution *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={pricePerExecution}
+                onChange={(e) => setPricePerExecution(e.target.value)}
+                placeholder="0.50"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Set the price users will pay each time they run your agent
+            </p>
+          </div>
         </div>
       )}
 
@@ -271,6 +405,43 @@ export default function N8nDiscovery() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Input Requirements *
+            </label>
+            <textarea
+              value={inputRequirements}
+              onChange={(e) => setInputRequirements(e.target.value)}
+              placeholder="Describe what inputs your agent needs. For example: 'Email address, message content, and recipient name' or 'Product name, price, and description'"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This helps users understand what to provide when using your agent
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Price Per Execution *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={pricePerExecution}
+                onChange={(e) => setPricePerExecution(e.target.value)}
+                placeholder="0.50"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Set the price users will pay each time they run your agent
+            </p>
+          </div>
         </div>
       )}
 
@@ -294,7 +465,7 @@ export default function N8nDiscovery() {
             {instance && (
               <button
                 onClick={registerAgent}
-                disabled={loading}
+                disabled={loading || !inputRequirements.trim() || !pricePerExecution}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Creating..." : "Create Agent"}
@@ -314,7 +485,7 @@ export default function N8nDiscovery() {
             {instance && (
               <button
                 onClick={registerAgent}
-                disabled={loading}
+                disabled={loading || !inputRequirements.trim() || !pricePerExecution}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Creating..." : `Register ${instance.activeWorkflows} Workflows`}
