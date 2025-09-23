@@ -212,7 +212,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading agent information...</p>
+          <p className="text-gray-800">Loading agent information...</p>
         </div>
       </div>
     );
@@ -223,7 +223,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h1>
-          <p className="text-gray-600 mb-6">Please sign in to execute agents.</p>
+          <p className="text-gray-800 mb-6">Please sign in to execute agents.</p>
           <Link
             href="/"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -240,7 +240,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Agent Not Found</h1>
-          <p className="text-gray-600 mb-6">The requested agent could not be found.</p>
+          <p className="text-gray-800 mb-6">The requested agent could not be found.</p>
           <Link
             href="/"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -260,7 +260,7 @@ export default function ExecuteAgentPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Execute Agent</h1>
-              <p className="text-gray-600 mt-1">Run {agent.name} with your custom input</p>
+              <p className="text-gray-800 mt-1">Run {agent.name} with your custom input</p>
             </div>
             <Link
               href="/"
