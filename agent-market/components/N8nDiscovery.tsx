@@ -280,12 +280,12 @@ export default function N8nDiscovery() {
             <textarea
               value={inputRequirements}
               onChange={(e) => setInputRequirements(e.target.value)}
-              placeholder="Describe what inputs your agent needs. For example: 'Email address, message content, and recipient name' or 'Product name, price, and description'"
+              placeholder="Describe what inputs your agent needs in JSON format. For example: 'Requires email, message, and recipient fields' or 'Expects product name, price, and description'"
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              This helps users understand what to provide when using your agent
+              This helps users understand what JSON fields to provide when using your agent
             </p>
           </div>
           <div>
@@ -362,12 +362,12 @@ export default function N8nDiscovery() {
             <textarea
               value={inputRequirements}
               onChange={(e) => setInputRequirements(e.target.value)}
-              placeholder="Describe what inputs your agent needs. For example: 'Email address, message content, and recipient name' or 'Product name, price, and description'"
+              placeholder="Describe what inputs your agent needs in JSON format. For example: 'Requires email, message, and recipient fields' or 'Expects product name, price, and description'"
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              This helps users understand what to provide when using your agent
+              This helps users understand what JSON fields to provide when using your agent
             </p>
           </div>
           <div>

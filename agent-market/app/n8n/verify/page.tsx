@@ -51,6 +51,14 @@ export default function N8nVerificationPage() {
       return;
     }
 
+    // Validate JSON format
+    try {
+      JSON.parse(exampleInput.trim());
+    } catch {
+      setError("Please provide valid JSON format for the example input");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -60,11 +68,7 @@ export default function N8nVerificationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           webhookUrl: agentData.webhookUrl,
-          testData: {
-            input: exampleInput.trim(),
-            timestamp: new Date().toISOString(),
-            testMode: true
-          }
+          testData: JSON.parse(exampleInput.trim())
         }),
       });
 
@@ -223,23 +227,23 @@ export default function N8nVerificationPage() {
           <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Test Your Agent</h3>
             <p className="text-gray-600 mb-6">
-              Provide example input that matches your agent&apos;s requirements. This will be used as an example for users.
+              Provide example input in JSON format that matches your agent&apos;s requirements. This will be sent directly to your webhook and shown to users as an example.
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-800 mb-2">
-                  Example Input *
+                  Example Input (JSON Format) *
                 </label>
                 <textarea
                   value={exampleInput}
                   onChange={(e) => setExampleInput(e.target.value)}
-                  placeholder={`Example: ${agentData.inputRequirements}`}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none"
+                  placeholder={`Example JSON input:\n{\n  "email": "user@example.com",\n  "message": "Hello from the marketplace",\n  "recipient": "John Doe"\n}`}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  This will be shown to users as an example of what to provide
+                  Provide the exact JSON format that will be sent to your webhook. This will be shown to users as an example of what to provide.
                 </p>
               </div>
 
@@ -256,10 +260,10 @@ export default function N8nVerificationPage() {
               {testOutput && (
                 <div>
                   <label className="block text-sm font-medium text-gray-800 mb-2">
-                    Agent Output
+                    Agent Output (JSON Response)
                   </label>
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 min-h-[100px] whitespace-pre-wrap">
-                    {testOutput}
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 min-h-[100px] whitespace-pre-wrap font-mono text-sm">
+                    {typeof testOutput === 'string' ? testOutput : JSON.stringify(testOutput, null, 2)}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     This will be shown to users as an example of what your agent returns
