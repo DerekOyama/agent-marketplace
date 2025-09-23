@@ -9,6 +9,7 @@ import CreditHistory from "../components/CreditHistory";
 import StripePaymentTest from "../components/StripePaymentTest";
 import AdminSidebar from "../components/AdminSidebar";
 import FloatingSidebar from "../components/FloatingSidebar";
+import { useAdmin } from "../lib/use-admin";
 import Link from "next/link";
 
 interface Agent {
@@ -32,6 +33,7 @@ interface Agent {
 
 export default function Home() {
   const router = useRouter();
+  const { isAdmin } = useAdmin();
   const [log, setLog] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,15 +44,13 @@ export default function Home() {
   const [showCreditPurchase, setShowCreditPurchase] = useState(false);
   const [showCreditHistory, setShowCreditHistory] = useState(false);
   const [showAdminSidebar, setShowAdminSidebar] = useState(false);
-  const [debugPassword, setDebugPassword] = useState("");
-  const [isDebugAuthenticated, setIsDebugAuthenticated] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
     setLoading(true);
     try {
       // Fast path: load light list first (no heavy stats)
-      const debugParam = isDebugAuthenticated ? "&debug=true" : "";
+      const debugParam = isAdmin ? "&debug=true" : "";
       const res = await fetch(`/api/agents?mode=light${debugParam}`);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
@@ -89,7 +89,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [isDebugAuthenticated]);
+  }, [isAdmin]);
 
   useEffect(() => {
     // Hydrate from cache for fast first paint
@@ -146,28 +146,19 @@ export default function Home() {
         setShowDebugMenu(false);
         break;
       case 'debug':
-        setShowDebugMenu(true);
-        setShowAdminSidebar(false);
-        setShowCreditHistory(false);
-        setShowCreditPurchase(false);
-        setShowStripeTest(false);
+        if (isAdmin) {
+          setShowDebugMenu(true);
+          setShowAdminSidebar(false);
+          setShowCreditHistory(false);
+          setShowCreditPurchase(false);
+          setShowStripeTest(false);
+        }
         break;
       default:
         break;
     }
   };
 
-  // Handle debug password authentication
-  const handleDebugPasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (debugPassword === "abc123!@#") {
-      setIsDebugAuthenticated(true);
-      setDebugPassword("");
-    } else {
-      alert("Incorrect password");
-      setDebugPassword("");
-    }
-  };
 
   // Removed auto-refresh - users must manually refresh page to update agents
 
@@ -412,14 +403,16 @@ export default function Home() {
       </div>
 
       {/* Floating Sidebar */}
-      <FloatingSidebar onNavigate={handleSidebarNavigate} />
+      <FloatingSidebar onNavigate={handleSidebarNavigate} isAdmin={isAdmin} />
 
-      {/* Admin Sidebar */}
-      <AdminSidebar 
-        isOpen={showAdminSidebar}
-        onClose={() => setShowAdminSidebar(false)}
-        onNavigate={handleSidebarNavigate}
-      />
+      {/* Admin Sidebar - Only visible to admins */}
+      {isAdmin && (
+        <AdminSidebar 
+          isOpen={showAdminSidebar}
+          onClose={() => setShowAdminSidebar(false)}
+          onNavigate={handleSidebarNavigate}
+        />
+      )}
 
       <div className={`transition-all duration-300 ${
         showAdminSidebar ? 'mr-0' : 'mr-0'
@@ -447,12 +440,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Debug Menu */}
-        {showDebugMenu && (
+        {/* Debug Menu - Only visible to admins */}
+        {isAdmin && showDebugMenu && (
           <div className="mb-8">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Debug Controls</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Admin Debug Controls</h3>
                 <button
                   onClick={() => setShowDebugMenu(false)}
                   className="px-3 py-1 bg-gray-900 text-white rounded hover:bg-black transition-colors text-sm"
@@ -462,41 +455,7 @@ export default function Home() {
                 </button>
               </div>
               
-              {/* Password Protection */}
-              {!isDebugAuthenticated ? (
-                <div className="mb-6">
-                  <h4 className="text-md font-medium text-gray-700 mb-3">Enter Debug Password</h4>
-                  <form onSubmit={handleDebugPasswordSubmit} className="flex items-center space-x-3">
-                    <input
-                      type="password"
-                      value={debugPassword}
-                      onChange={(e) => setDebugPassword(e.target.value)}
-                      placeholder="Debug password"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-500"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Unlock
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-green-600 font-medium">🔓 Debug tools unlocked</span>
-                    <button
-                      onClick={() => {
-                        setIsDebugAuthenticated(false);
-                        setDebugPassword("");
-                      }}
-                      className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      Lock
-                    </button>
-                  </div>
+              {/* Admin Debug Controls */}
                   
                   {/* Basic Controls */}
               <div className="mb-6">
@@ -569,8 +528,6 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-                </>
-              )}
             </div>
           </div>
         )}
@@ -612,7 +569,7 @@ export default function Home() {
                 onAction={(action) => handleAgentAction(action, agent.id)}
                 loading={loading}
                 log={log}
-                debugEnabled={isDebugAuthenticated}
+                debugEnabled={isAdmin}
               />
             ))
           ) : (
