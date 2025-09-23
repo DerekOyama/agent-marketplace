@@ -24,7 +24,7 @@ export async function POST() {
     const webhookAgent = await prisma.agent.create({
       data: {
         name: "Demo n8n Agent",
-        description: "N8n webhook agent for testing with standardized JSON input/output",
+        description: "AI Agent for testing with standardized JSON input/output",
         quoteUrl: "https://derekoyama.app.n8n.cloud/webhook/test-agent",
         runUrl: "https://derekoyama.app.n8n.cloud/webhook/test-agent",
         token: "n8n-webhook-token",

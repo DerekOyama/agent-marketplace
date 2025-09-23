@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const agent = await prisma.agent.create({
       data: {
         name: name.trim(),
-        description: `N8n webhook agent: ${webhookUrl} - ${inputRequirements.trim()}`,
+        description: `AI Agent: ${inputRequirements.trim()}`,
         quoteUrl: webhookUrl, // Use webhook URL as quote URL
         runUrl: webhookUrl,   // Use webhook URL as run URL
         token: "n8n-webhook-token", // Generate a token for n8n agents
@@ -68,7 +68,6 @@ export async function POST(req: NextRequest) {
         webhookUrl: webhookUrl,
         triggerType: "webhook",
         isActive: true,
-        ownerId: userId,
         inputRequirements: inputRequirements.trim(),
         pricePerExecutionCents: pricePerExecutionCents,
         exampleInput: exampleInput.trim(),
