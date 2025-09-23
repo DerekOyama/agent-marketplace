@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { z } from "zod";
+import { getCurrentUserId } from "../../../lib/auth";
 
 // Define schemas inline to avoid import issues
 const MandateRulesSchema = z.object({ 
@@ -25,17 +26,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
     
-    const userId = "demo-user"; // stub auth
-    
-    // First, create the user if it doesn't exist
-    await prisma.user.upsert({
-      where: { email: "demo@example.com" },
-      update: {},
-      create: {
-        id: userId,
-        email: "demo@example.com"
-      }
-    });
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     
     const mandate = await prisma.mandate.create({ 
       data: { 

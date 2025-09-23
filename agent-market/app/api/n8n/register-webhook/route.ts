@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { getCurrentUserId } from "../../../../lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const { webhookUrl, name } = await req.json();
 
     console.log('Registering webhook as agent:', { webhookUrl, name });
@@ -28,6 +33,7 @@ export async function POST(req: NextRequest) {
         webhookUrl: webhookUrl,
         triggerType: "webhook",
         isActive: true,
+        ownerId: userId,
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n"],

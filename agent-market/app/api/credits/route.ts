@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
+import { getCurrentUserId } from "../../../lib/auth";
 
 // GET - Get user's current credit balance
 export async function GET() {
   try {
-    const userId = "demo-user"; // Using the same demo user system
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -16,23 +20,7 @@ export async function GET() {
       }
     });
 
-    if (!user) {
-      // Create demo user if it doesn't exist
-      const newUser = await prisma.user.create({
-        data: {
-          id: userId,
-          email: "demo@example.com",
-          creditBalanceCents: 1000 // $10.00
-        },
-        select: { 
-          id: true, 
-          email: true, 
-          creditBalanceCents: true,
-          updatedAt: true
-        }
-      });
-      return NextResponse.json({ user: newUser }, { status: 200 });
-    }
+    if (!user) return NextResponse.json({ error: "user_not_found" }, { status: 404 });
 
     return NextResponse.json({ user }, { status: 200 });
   } catch (error) {
@@ -48,7 +36,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { amountCents, operation = "add" } = await req.json();
-    const userId = "demo-user";
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     
     if (!amountCents || typeof amountCents !== "number") {
       return NextResponse.json({ 

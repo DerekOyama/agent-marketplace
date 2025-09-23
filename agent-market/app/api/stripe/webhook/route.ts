@@ -153,21 +153,46 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   console.log('Checkout session completed:', session.id);
+  console.log('Session metadata:', session.metadata);
   
   try {
     // Get metadata from session
-    const userId = session.metadata?.userId || "demo-user";
-    const creditsToPurchase = parseInt(session.metadata?.creditsToPurchase || "0");
+    const userId = session.metadata?.userId;
+    const amountCents = parseInt(session.metadata?.amountCents || "0");
     const purchaseType = session.metadata?.type;
     
-    if (purchaseType === "credit_purchase" && creditsToPurchase > 0) {
+    console.log('Processing webhook - userId:', userId, 'amountCents:', amountCents, 'purchaseType:', purchaseType);
+    
+    if (userId && purchaseType === "balance_topup" && amountCents > 0) {
       // Find the credit purchase record
-      const creditPurchase = await prisma.creditPurchase.findFirst({
+      let creditPurchase = await prisma.creditPurchase.findFirst({
         where: {
           stripeCheckoutSessionId: session.id,
           status: "pending"
         }
       });
+
+      // Fallback: if no pending record found (e.g., created before auth wiring), create one now
+      if (!creditPurchase) {
+        const sessionAmountCents = typeof session.amount_total === 'number' ? session.amount_total : 0;
+        const finalAmountCents = amountCents > 0 ? amountCents : sessionAmountCents;
+        
+        console.log('Creating fallback credit purchase - amountCents:', finalAmountCents);
+        
+        creditPurchase = await prisma.creditPurchase.create({
+          data: {
+            userId,
+            amountCents: finalAmountCents,
+            creditsPurchased: finalAmountCents, // 1 cent = 1 credit in our system
+            currency: (session.currency || 'usd').toLowerCase(),
+            stripeCheckoutSessionId: session.id,
+            status: "pending",
+            metadata: {
+              createdByWebhook: true
+            }
+          }
+        });
+      }
 
       if (creditPurchase) {
         // Process the credit purchase
@@ -177,16 +202,18 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         );
 
         if (result.success) {
-          console.log(`Successfully processed credit purchase ${creditPurchase.id} for user ${userId}`);
+          console.log(`Successfully processed balance top-up ${creditPurchase.id} for user ${userId}`);
           
           // Note: Audit logging can be added later if needed
-          console.log(`Credit purchase completed: ${creditPurchase.id} for user ${userId}`);
+          console.log(`Balance top-up completed: ${creditPurchase.id} for user ${userId}`);
         } else {
-          console.error(`Failed to process credit purchase ${creditPurchase.id}:`, result.error);
+          console.error(`Failed to process balance top-up ${creditPurchase.id}:`, result.error);
         }
       } else {
-        console.warn(`No pending credit purchase found for session ${session.id}`);
+        console.warn(`No pending balance top-up found for session ${session.id}`);
       }
+    } else {
+      console.log('Webhook conditions not met - userId:', userId, 'purchaseType:', purchaseType, 'amountCents:', amountCents);
     }
   } catch (error) {
     console.error('Error handling checkout session completed:', error);

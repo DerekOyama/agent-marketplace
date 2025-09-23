@@ -216,7 +216,7 @@ export class ApiWrapper {
   /**
    * Extract user ID from request (placeholder for auth implementation)
    */
-  static getUserId(_req: NextRequest): string | null {
+  static getUserId(): string | null {
     // TODO: Implement proper authentication
     // For now, return demo user or extract from headers
     return 'demo-user';
@@ -225,7 +225,7 @@ export class ApiWrapper {
   /**
    * Check if user is authenticated
    */
-  static isAuthenticated(_req: NextRequest): boolean {
+  static isAuthenticated(): boolean {
     // TODO: Implement proper authentication check
     // For now, always return true for demo purposes
     return true;

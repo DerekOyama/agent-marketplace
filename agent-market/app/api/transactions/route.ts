@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import Stripe from "stripe";
 import { z } from "zod";
+import { getCurrentUserId } from "../../../lib/auth";
 
 // Define schemas inline to avoid import issues
 const CreateTxSchema = z.object({
@@ -25,7 +26,10 @@ export async function POST(req: NextRequest) {
     }
     
     const { agentId, amountCents, currency } = parsed.data;
-    const userId = "demo-user";
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     
     // Check if agent exists
     const agent = await prisma.agent.findUnique({

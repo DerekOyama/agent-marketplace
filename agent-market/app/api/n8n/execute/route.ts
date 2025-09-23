@@ -4,6 +4,7 @@ import { StandardAgentInput, StandardAgentOutput } from "../../../../types/agent
 import { MetricsCollector } from "../../../../lib/metrics-collector";
 import { DataSanitizer } from "../../../../lib/data-sanitizer";
 import { CreditManager } from "../../../../lib/credit-manager";
+import { getCurrentUserId } from "../../../../lib/auth";
 
 export async function POST(req: NextRequest) {
   const metricsCollector = new MetricsCollector();
@@ -12,7 +13,10 @@ export async function POST(req: NextRequest) {
   
   try {
     const { agentId, inputData } = await req.json();
-    const userId = "demo-user"; // Using the same demo user system
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Get user session info for tracking

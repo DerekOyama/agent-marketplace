@@ -11,6 +11,9 @@ model User {
   id                 String                 @id @default(cuid())
   email              String                 @unique
   creditBalanceCents Int                    @default(1000)
+  stripeCustomerId   String?
+  stripeConnectId    String?
+  stripeConnectStatus String?
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   executions         AgentExecution[]
@@ -20,6 +23,7 @@ model User {
   agentInteractions  UserAgentInteraction[]
   creditTransactions CreditTransaction[]
   creditPurchases    CreditPurchase[]
+  agents             Agent[]
 }
 
 model Agent {
@@ -51,6 +55,10 @@ model Agent {
   metrics          AgentMetrics[]
   transactions     Transaction[]
   userInteractions UserAgentInteraction[]
+  ownerId          String?
+  owner            User?                  @relation(fields: [ownerId], references: [id])
+
+  @@index([ownerId])
 }
 
 model Mandate {
@@ -75,6 +83,8 @@ model Transaction {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   receiptJson Json?
+  platformFeeCents Int      @default(0)
+  sellerEarningsCents Int   @default(0)
   logs        AuditLog[]
   agent       Agent      @relation(fields: [agentId], references: [id])
   user        User       @relation(fields: [userId], references: [id])

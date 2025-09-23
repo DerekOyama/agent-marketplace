@@ -30,6 +30,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
       if (res.ok && data.user) {
         setUser(data.user);
         onBalanceUpdate?.(data.user.creditBalanceCents);
+        try { localStorage.setItem("walletBalanceCents", String(data.user.creditBalanceCents)); } catch {}
       } else {
         setError(data.message || "Failed to fetch balance");
         console.error("Credits API error:", data);
@@ -44,6 +45,22 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   }, [onBalanceUpdate]);
 
   useEffect(() => {
+    // Hydrate from cache immediately for fast UI
+    try {
+      const cached = localStorage.getItem("walletBalanceCents");
+      if (cached !== null) {
+        const cents = parseInt(cached, 10);
+        if (!Number.isNaN(cents)) {
+          setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
+            id: "cached",
+            email: "",
+            creditBalanceCents: cents,
+            updatedAt: new Date().toISOString()
+          });
+          setLoading(false);
+        }
+      }
+    } catch {}
     fetchBalance();
   }, [fetchBalance]);
 
@@ -96,29 +113,38 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
 
   return (
     <div className={`flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${isUpdating ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}>
-      <div className="flex items-center space-x-1">
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button
+        onClick={() => {
+          window.location.href = '/funds';
+        }}
+        title="View wallet / Add funds"
+        className="flex items-center space-x-1 group"
+      >
+        <svg className="w-4 h-4 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
         </svg>
-        <span className="text-sm font-medium text-gray-800">Credits:</span>
+        <span className="text-sm font-medium text-gray-800">Wallet:</span>
         <span className={`text-sm font-bold transition-colors duration-300 ${getBalanceColor(user?.creditBalanceCents || 0)} ${isUpdating ? 'animate-pulse' : ''}`}>
-          {user ? formatBalance(user.creditBalanceCents) : "$10.00"}
+          {user ? formatBalance(user.creditBalanceCents) : "$0.00"}
         </span>
-        {isUpdating && (
-          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        )}
-      </div>
-      <div className="flex items-center space-x-1">
-        <button
-          onClick={fetchBalance}
-          className="text-xs text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
-          title="Refresh balance"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-      </div>
+        <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+
+      {isUpdating && (
+        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      )}
+
+      <button
+        onClick={fetchBalance}
+        className="text-xs text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
+        title="Refresh balance"
+      >
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
     </div>
   );
 }

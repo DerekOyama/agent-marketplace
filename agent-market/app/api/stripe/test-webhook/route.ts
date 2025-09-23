@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (webhookSecret) {
       try {
-        const body = await req.text();
+        await req.text(); // Read body for signature verification
         const signature = req.headers.get('stripe-signature');
         
         if (signature) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
 import CreditPurchase from "../components/CreditPurchase";
@@ -29,6 +30,7 @@ interface Agent {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [log, setLog] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,7 @@ export default function Home() {
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/agents");
       const text = await res.text();
@@ -77,16 +80,29 @@ export default function Home() {
           })
         );
         setAgents(agentsWithStats);
+        try { localStorage.setItem("agentsCache", JSON.stringify(agentsWithStats)); } catch {}
       } else {
-        setLog("No agents found. Please run the seed script first.");
+        setAgents([]);
       }
     } catch (error) {
       console.error("Error fetching agents:", error);
       setLog("Error fetching agents: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // Hydrate from cache for fast first paint
+    try {
+      const cached = localStorage.getItem("agentsCache");
+      if (cached) {
+        const parsed = JSON.parse(cached) as Agent[];
+        if (Array.isArray(parsed)) {
+          setAgents(parsed);
+        }
+      }
+    } catch {}
     fetchAgents();
     
     // Listen for messages from credit purchase popup
@@ -121,7 +137,7 @@ export default function Home() {
         setShowCreditPurchase(false);
         setShowStripeTest(false);
         setShowDebugMenu(false);
-        // N8n connection will be handled by the sidebar
+        router.push('/n8n');
         break;
       case 'admin-panel':
         setShowAdminSidebar(true);
@@ -375,15 +391,15 @@ export default function Home() {
                 onBalanceUpdate={setCreditBalance}
                 refreshTrigger={creditRefreshTrigger}
               />
-              <button
-                onClick={() => setShowCreditPurchase(!showCreditPurchase)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center space-x-2"
+              <Link
+                href="/funds"
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium text-sm flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m0-4h4m-4 0l-2-2m2 2l-2 2" />
                 </svg>
-                <span>Buy Credits</span>
-              </button>
+                <span>View Wallet</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -407,10 +423,7 @@ export default function Home() {
         {/* Credit Purchase */}
         {showCreditPurchase && (
           <div className="mb-8">
-            <CreditPurchase 
-              onPurchaseComplete={() => setCreditRefreshTrigger(prev => prev + 1)}
-              onBalanceUpdate={() => setCreditRefreshTrigger(prev => prev + 1)}
-            />
+            <CreditPurchase />
           </div>
         )}
 
@@ -432,7 +445,16 @@ export default function Home() {
         {showDebugMenu && (
           <div className="mb-8">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Debug Controls</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Debug Controls</h3>
+                <button
+                  onClick={() => setShowDebugMenu(false)}
+                  className="px-3 py-1 bg-gray-900 text-white rounded hover:bg-black transition-colors text-sm"
+                  title="Hide debug controls"
+                >
+                  Esc
+                </button>
+              </div>
               
               {/* Password Protection */}
               {!isDebugAuthenticated ? (
@@ -505,6 +527,8 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* N8n Testing - Removed per request */}
+
               {/* Stripe Payment Testing */}
               <div>
                 <h4 className="text-md font-medium text-gray-700 mb-3">Stripe Payment Testing</h4>
@@ -546,8 +570,35 @@ export default function Home() {
         )}
 
         {/* Agents List */}
-        <div className="space-y-6">
-          {agents.length > 0 ? (
+        {loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {Array.from({ length: Math.max(agents.length || 4, 4) }).map((_, idx) => (
+              <div key={idx} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                    <div>
+                      <div className="h-4 w-32 bg-gray-200 rounded mb-1" />
+                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                  <div className="w-8 h-2 bg-gray-200 rounded" />
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {Array.from({ length: 6 }).map((__, i) => (
+                    <span key={i} className="h-6 w-20 bg-gray-200 rounded-full" />
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="h-8 bg-gray-200 rounded" />
+                  <div className="h-8 bg-gray-200 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {!loading && agents.length > 0 ? (
             agents.map((agent) => (
               <AgentCard
                 key={agent.id}
@@ -555,10 +606,11 @@ export default function Home() {
                 onAction={(action) => handleAgentAction(action, agent.id)}
                 loading={loading}
                 log={log}
+                debugEnabled={isDebugAuthenticated}
               />
             ))
           ) : (
-            <div className="text-center py-16">
+            !loading && <div className="col-span-full text-center py-16">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 max-w-lg mx-auto">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

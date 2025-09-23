@@ -5,7 +5,7 @@ import { ErrorCode } from '../../../../lib/error-codes';
 
 const requestLogger = new RequestLogger();
 
-async function handler(req: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+async function handler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined;
   const endDate = searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined;

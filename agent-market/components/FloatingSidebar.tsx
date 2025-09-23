@@ -33,22 +33,6 @@ export default function FloatingSidebar({ onNavigate }: FloatingSidebarProps) {
 
         {/* Menu Items */}
         <div className="px-2 pb-2">
-          {/* Credit History */}
-          <button
-            onClick={() => handleMenuClick('credit-history')}
-            className={`w-full p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center ${
-              isExpanded ? 'space-x-3' : 'justify-center'
-            }`}
-            title={!isExpanded ? "Credit History" : ""}
-          >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            {isExpanded && (
-              <span className="text-sm font-medium text-gray-700">Credit History</span>
-            )}
-          </button>
-
           {/* Connect N8N */}
           <button
             onClick={() => handleMenuClick('n8n-connect')}

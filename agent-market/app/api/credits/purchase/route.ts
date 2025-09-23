@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { createCheckoutSession, isStripeConfigured } from "../../../../lib/stripe";
+import { getCurrentUserId } from "../../../../lib/auth";
 import { z } from "zod";
 
 const PurchaseCreditsSchema = z.object({
@@ -14,9 +15,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { amountCents, currency, description } = PurchaseCreditsSchema.parse(body);
     
-    const userId = "demo-user"; // In real app, get from session/auth
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     
-    // Calculate credits to purchase (1 credit = 1 cent for simplicity)
+    // Amount in cents equals internal credit units 1:1 for now
     const creditsToPurchase = amountCents;
     
     // Check if Stripe is configured
@@ -37,13 +41,13 @@ export async function POST(req: NextRequest) {
     const session = await createCheckoutSession({
       amount: amountCents,
       currency,
-      description: description || `Purchase ${creditsToPurchase} credits`,
-      successUrl: `${req.nextUrl.origin}/credits/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${req.nextUrl.origin}/credits/cancel`,
+      description: description || `Add $${(amountCents / 100).toFixed(2)} to balance`,
+      successUrl: `${req.nextUrl.origin}/funds?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${req.nextUrl.origin}/funds?payment=cancelled`,
       metadata: {
         userId,
-        creditsToPurchase: creditsToPurchase.toString(),
-        type: "credit_purchase"
+        amountCents: amountCents.toString(),
+        type: "balance_topup"
       }
     });
 
@@ -57,7 +61,7 @@ export async function POST(req: NextRequest) {
         stripeCheckoutSessionId: session.id,
         status: "pending",
         metadata: {
-          description: description || `Purchase ${creditsToPurchase} credits`,
+          description: description || `Add $${(amountCents / 100).toFixed(2)} to balance`,
           checkoutUrl: session.url
         }
       }
