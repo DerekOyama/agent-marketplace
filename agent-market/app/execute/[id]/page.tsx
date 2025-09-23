@@ -10,11 +10,10 @@ interface Agent {
   name: string;
   description: string;
   type: string;
-  pricePerExecutionCents: number;
-  exampleInput: string;
-  inputRequirements: string;
-  outputRequirements: string;
   isActive: boolean;
+  triggerType?: string;
+  pricing?: { pricePerExecutionCents?: number };
+  stats?: Record<string, unknown>;
 }
 
 interface InputField {
@@ -37,6 +36,7 @@ export default function ExecuteAgentPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [inputFields, setInputFields] = useState<InputField[]>([]);
+  const [exampleInput, setExampleInput] = useState<string>("");
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -59,10 +59,14 @@ export default function ExecuteAgentPage() {
       
       if (response.ok) {
         const data = await response.json();
-        setAgent(data.agent);
+        setAgent(data.documentation.agent);
+        
+        // Store example input
+        const example = data.documentation.input.example;
+        setExampleInput(JSON.stringify(example, null, 2));
         
         // Parse input requirements to create form fields
-        const fields = parseInputRequirements(data.requirements.inputRequirements);
+        const fields = parseInputRequirements(data.documentation.input.description);
         setInputFields(fields);
         
         // Initialize form data with empty values
@@ -249,26 +253,16 @@ export default function ExecuteAgentPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Execution Cost:</span>
                     <span className="text-lg font-bold text-blue-600">
-                      ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
+                      ${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)}
                     </span>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Input Requirements</h4>
-                  <p className="text-sm text-gray-600">{agent.inputRequirements}</p>
-                </div>
-
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Expected Output</h4>
-                  <p className="text-sm text-gray-600">{agent.outputRequirements}</p>
-                </div>
-
-                {agent.exampleInput && (
+                {exampleInput && (
                   <div className="border-t border-gray-200 pt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Example Input</h4>
                     <div className="bg-gray-50 rounded-lg p-3">
-                      <pre className="text-sm text-gray-800 whitespace-pre-wrap">{agent.exampleInput}</pre>
+                      <pre className="text-sm text-gray-800 whitespace-pre-wrap">{exampleInput}</pre>
                     </div>
                   </div>
                 )}
@@ -331,7 +325,7 @@ export default function ExecuteAgentPage() {
 
                 <div className="mt-8 flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    You will be charged ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
+                    You will be charged ${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
                   </div>
                   
                   <button
@@ -339,7 +333,7 @@ export default function ExecuteAgentPage() {
                     disabled={executing}
                     className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
-                    {executing ? 'Executing...' : `Execute Agent ($${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
+                    {executing ? 'Executing...' : `Execute Agent ($${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
                   </button>
                 </div>
               </form>
