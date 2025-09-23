@@ -131,12 +131,12 @@ export default function N8nDiscovery() {
       return;
     }
 
-    if (!agentName.trim()) {
+    if (!agentName || !agentName.trim()) {
       setError("Please enter an agent name");
       return;
     }
 
-    if (!inputRequirements.trim()) {
+    if (!inputRequirements || !inputRequirements.trim()) {
       setError("Please describe what inputs your agent needs");
       return;
     }
@@ -149,8 +149,8 @@ export default function N8nDiscovery() {
     // Store agent data in sessionStorage for verification page
     const agentData = {
       webhookUrl,
-      name: agentName.trim(),
-      inputRequirements: inputRequirements.trim(),
+      name: agentName?.trim() || "",
+      inputRequirements: inputRequirements?.trim() || "",
       pricePerExecutionCents: Math.round(Number(pricePerExecution) * 100),
       apiKey: mode === "api" ? apiKey : null,
       instanceName: mode === "api" ? instanceName : null,
@@ -414,7 +414,7 @@ export default function N8nDiscovery() {
             
             <button
               onClick={proceedToVerification}
-              disabled={loading || !webhookUrl || !agentName.trim() || !inputRequirements.trim() || !pricePerExecution}
+              disabled={loading || !webhookUrl || !agentName || !agentName.trim() || !inputRequirements || !inputRequirements.trim() || !pricePerExecution}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {loading ? "Processing..." : "Verify & Create Agent"}
@@ -432,7 +432,7 @@ export default function N8nDiscovery() {
             
             <button
               onClick={proceedToVerification}
-              disabled={loading || !webhookUrl || !agentName.trim() || !inputRequirements.trim() || !pricePerExecution}
+              disabled={loading || !webhookUrl || !agentName || !agentName.trim() || !inputRequirements || !inputRequirements.trim() || !pricePerExecution}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {loading ? "Processing..." : "Verify & Create Agent"}
