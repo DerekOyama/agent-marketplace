@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
 import CreditPurchase from "../components/CreditPurchase";
 import CreditHistory from "../components/CreditHistory";
 import StripePaymentTest from "../components/StripePaymentTest";
 import AdminSidebar from "../components/AdminSidebar";
-import FloatingSidebar from "../components/FloatingSidebar";
 import { useAdmin } from "../lib/use-admin";
 import Link from "next/link";
 
@@ -33,7 +31,6 @@ interface Agent {
 }
 
 export default function Home() {
-  const router = useRouter();
   const { isAdmin } = useAdmin();
   const [log, setLog] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -41,9 +38,6 @@ export default function Home() {
   const [, setCreditBalance] = useState<number>(0);
   const [creditRefreshTrigger, setCreditRefreshTrigger] = useState<number>(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
-  const [showStripeTest, setShowStripeTest] = useState(false);
-  const [showCreditPurchase, setShowCreditPurchase] = useState(false);
-  const [showCreditHistory, setShowCreditHistory] = useState(false);
   const [showAdminSidebar, setShowAdminSidebar] = useState(false);
 
   // Fetch agents from the database
@@ -117,48 +111,6 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
 
-  // Handle navigation from floating sidebar
-  const handleSidebarNavigate = (path: string) => {
-    switch (path) {
-      case 'credit-history':
-        setShowCreditHistory(true);
-        setShowCreditPurchase(false);
-        setShowStripeTest(false);
-        setShowDebugMenu(false);
-        break;
-      case 'stripe-test':
-        setShowStripeTest(true);
-        setShowCreditHistory(false);
-        setShowCreditPurchase(false);
-        setShowDebugMenu(false);
-        break;
-      case 'n8n-connect':
-        setShowCreditHistory(false);
-        setShowCreditPurchase(false);
-        setShowStripeTest(false);
-        setShowDebugMenu(false);
-        router.push('/n8n');
-        break;
-      case 'admin-panel':
-        setShowAdminSidebar(true);
-        setShowCreditHistory(false);
-        setShowCreditPurchase(false);
-        setShowStripeTest(false);
-        setShowDebugMenu(false);
-        break;
-      case 'debug':
-        if (isAdmin) {
-          setShowDebugMenu(true);
-          setShowAdminSidebar(false);
-          setShowCreditHistory(false);
-          setShowCreditPurchase(false);
-          setShowStripeTest(false);
-        }
-        break;
-      default:
-        break;
-    }
-  };
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
@@ -385,7 +337,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ marginLeft: '64px' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center py-8">
             <div className="mb-4 lg:mb-0">
               <h1 className="text-4xl font-bold mb-2">AI Agent Marketplace</h1>
@@ -434,22 +386,38 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Floating Sidebar */}
-      <FloatingSidebar onNavigate={handleSidebarNavigate} isAdmin={isAdmin} />
+      {/* N8N Integration Button */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-center">
+            <Link
+              href="/n8n"
+              className="inline-flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 font-medium text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <span>Connect N8N Workflows</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* Admin Sidebar - Only visible to admins */}
       {isAdmin && (
         <AdminSidebar 
           isOpen={showAdminSidebar}
           onClose={() => setShowAdminSidebar(false)}
-          onNavigate={handleSidebarNavigate}
         />
       )}
 
       <div className={`transition-all duration-300 ${
         showAdminSidebar ? 'mr-0' : 'mr-0'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ml-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Credit Purchase */}
         {showCreditPurchase && (

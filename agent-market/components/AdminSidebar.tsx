@@ -5,14 +5,16 @@ import React from "react";
 interface AdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (path: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
 export default function AdminSidebar({ isOpen, onClose, onNavigate }: AdminSidebarProps) {
   // Password lockout removed; admin tools are directly accessible
 
   const handleMenuClick = (path: string) => {
-    onNavigate(path);
+    if (onNavigate) {
+      onNavigate(path);
+    }
     onClose();
   };
 
