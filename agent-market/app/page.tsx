@@ -319,6 +319,8 @@ export default function Home() {
         case "refresh-agent":
           // Refresh a specific agent by refetching all agents
           await fetchAgents();
+          // Also refresh credit balance
+          setCreditRefreshTrigger(prev => prev + 1);
           setLog(`✅ Agent ${agentId} refreshed`);
           break;
         default:
@@ -377,6 +379,15 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m0-4h4m-4 0l-2-2m2 2l-2 2" />
                 </svg>
                 <span>View Wallet</span>
+              </Link>
+              <Link
+                href="/history"
+                className="px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm flex items-center space-x-2 shadow-lg"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span>History</span>
               </Link>
             </div>
           </div>
