@@ -131,7 +131,7 @@ export default function AgentRequirementsModal({
                   {[
                     { id: 'input', label: 'Input Requirements', icon: '📥' },
                     { id: 'output', label: 'Output Format', icon: '📤' },
-                    { id: 'usage', label: 'Usage Examples', icon: '🚀' }
+                    { id: 'usage', label: 'How to Use', icon: '🚀' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -229,70 +229,70 @@ export default function AgentRequirementsModal({
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 mb-2">
-                        Usage Examples
+                        How to Use This Agent
                       </h3>
                       <p className="text-gray-900 mb-4">
-                        Here&apos;s how to use this agent in your application:
+                        This agent is ready to use! Simply provide your input data and we&apos;ll handle the rest.
                       </p>
                     </div>
 
-                    {/* API Endpoint */}
+                    {/* Simple Usage Instructions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2">📋 Usage Instructions:</h4>
+                      <ol className="text-blue-800 text-sm space-y-2 list-decimal list-inside">
+                        <li>Prepare your input data in the format shown above</li>
+                        <li>Send a POST request to our execution endpoint</li>
+                        <li>Include your agent ID and input data in the request</li>
+                        <li>Receive the processed results from the agent</li>
+                      </ol>
+                    </div>
+
+                    {/* Example Request */}
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">API Endpoint:</h4>
-                      <div className="bg-gray-100 p-3 rounded-lg border border-gray-300">
-                        <code className="text-sm text-gray-900 break-all">{requirements.usage.endpoint}</code>
+                      <h4 className="font-semibold text-gray-900 mb-2">Example Request:</h4>
+                      <div className="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                        <pre>{`curl -X POST \\
+  https://agent-marketplace.com/api/execute \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "agentId": "${requirements.agent.id}",
+    "data": ${JSON.stringify(requirements.usage.body.data, null, 2)}
+  }'`}</pre>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Use this endpoint to execute the agent with your input data
-                      </p>
                     </div>
 
-                    <div className="grid gap-6">
-                      {/* cURL Example */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">cURL Request:</h4>
-                        <div className="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                          <pre>{`curl -X ${requirements.usage.method} \\
-  ${requirements.usage.endpoint} \\
-  -H "Content-Type: ${requirements.usage.headers['Content-Type']}" \\
-  -d '${JSON.stringify(requirements.usage.body, null, 2)}'`}</pre>
-                        </div>
-                      </div>
-
-                      {/* JavaScript Example */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">JavaScript:</h4>
-                        <div className="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                          <pre>{`const response = await fetch('${requirements.usage.endpoint}', {
-  method: '${requirements.usage.method}',
-  headers: {
-    'Content-Type': '${requirements.usage.headers['Content-Type']}'
+                    {/* Response Example */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Example Response:</h4>
+                      <div className="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                        <pre>{`{
+  "success": true,
+  "result": {
+    "success": true,
+    "data": {
+      "message": "Processing completed successfully"
+    },
+    "metadata": {
+      "executionId": "exec_123456789",
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "duration": 1500
+    }
   },
-  body: JSON.stringify(${JSON.stringify(requirements.usage.body, null, 2)})
-});
-
-const result = await response.json();
-console.log(result);`}</pre>
-                        </div>
+  "agent": {
+    "id": "${requirements.agent.id}",
+    "name": "${requirements.agent.name}"
+  }
+}`}</pre>
                       </div>
+                    </div>
 
-                      {/* Python Example */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Python:</h4>
-                        <div className="bg-gray-900 text-green-300 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                          <pre>{`import requests
-import json
-
-response = requests.${requirements.usage.method.toLowerCase()}(
-    '${requirements.usage.endpoint}',
-    headers={'Content-Type': '${requirements.usage.headers['Content-Type']}'},
-    data=json.dumps(${JSON.stringify(requirements.usage.body, null, 2)})
-)
-
-result = response.json()
-print(result)`}</pre>
-                        </div>
-                      </div>
+                    {/* Integration Note */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-amber-900 mb-2">🔧 Integration Note:</h4>
+                      <p className="text-amber-800 text-sm">
+                        This agent is powered by our internal automation system. You don&apos;t need to worry about the technical details - 
+                        just send your data and we&apos;ll handle calling the appropriate automation workflows.
+                      </p>
                     </div>
                   </div>
                 )}

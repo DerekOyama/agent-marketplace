@@ -107,12 +107,15 @@ export async function GET(
         example: generateExampleOutput(outputSchema as Record<string, unknown> | null),
       },
       usage: {
-        endpoint: `/api/agents/${agent.id}/execute`,
+        endpoint: `/api/execute`,
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: exampleInput
+        body: {
+          agentId: agent.id,
+          data: exampleInput.data || exampleInput
+        }
       }
     };
 
