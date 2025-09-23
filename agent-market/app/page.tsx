@@ -6,6 +6,7 @@ import CreditBalance from "../components/CreditBalance";
 import CreditPurchase from "../components/CreditPurchase";
 import CreditHistory from "../components/CreditHistory";
 import StripePaymentTest from "../components/StripePaymentTest";
+import AdminSidebar from "../components/AdminSidebar";
 import Link from "next/link";
 
 interface Agent {
@@ -36,6 +37,9 @@ export default function Home() {
   const [showStripeTest, setShowStripeTest] = useState(false);
   const [showCreditPurchase, setShowCreditPurchase] = useState(false);
   const [showCreditHistory, setShowCreditHistory] = useState(false);
+  const [showAdminSidebar, setShowAdminSidebar] = useState(false);
+  const [debugPassword, setDebugPassword] = useState("");
+  const [isDebugAuthenticated, setIsDebugAuthenticated] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
@@ -95,6 +99,51 @@ export default function Home() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
+
+  // Handle navigation from admin sidebar
+  const handleAdminNavigate = (path: string) => {
+    switch (path) {
+      case 'credit-history':
+        setShowCreditHistory(true);
+        setShowCreditPurchase(false);
+        setShowStripeTest(false);
+        setShowDebugMenu(false);
+        break;
+      case 'stripe-test':
+        setShowStripeTest(true);
+        setShowCreditHistory(false);
+        setShowCreditPurchase(false);
+        setShowDebugMenu(false);
+        break;
+      case 'n8n-connect':
+        setShowCreditHistory(false);
+        setShowCreditPurchase(false);
+        setShowStripeTest(false);
+        setShowDebugMenu(false);
+        // N8n connection will be handled by the sidebar
+        break;
+      case 'debug':
+        setShowDebugMenu(true);
+        setShowCreditHistory(false);
+        setShowCreditPurchase(false);
+        setShowStripeTest(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle debug password authentication
+  const handleDebugPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (debugPassword === "abc123!@#") {
+      setIsDebugAuthenticated(true);
+      setDebugPassword("");
+    } else {
+      alert("Incorrect password");
+      setDebugPassword("");
+    }
+  };
 
   // Real-time metrics refresh every 30 seconds
   useEffect(() => {
@@ -317,40 +366,36 @@ export default function Home() {
                 onBalanceUpdate={setCreditBalance}
                 refreshTrigger={creditRefreshTrigger}
               />
-              <Link 
-                href="/n8n" 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-              >
-                Connect N8n
-              </Link>
               <button
                 onClick={() => setShowCreditPurchase(!showCreditPurchase)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center space-x-2"
               >
-                {showCreditPurchase ? "Hide Purchase" : "Buy Credits"}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                <span>Buy Credits</span>
               </button>
               <button
-                onClick={() => setShowCreditHistory(!showCreditHistory)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                onClick={() => setShowAdminSidebar(true)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm flex items-center space-x-2"
               >
-                {showCreditHistory ? "Hide History" : "Credit History"}
-              </button>
-              <button
-                onClick={() => setShowStripeTest(!showStripeTest)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
-              >
-                {showStripeTest ? "Hide Stripe Test" : "Stripe Test"}
-              </button>
-              <button
-                onClick={() => setShowDebugMenu(!showDebugMenu)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm"
-              >
-                {showDebugMenu ? "Hide Debug" : "Debug"}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Admin</span>
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Admin Sidebar */}
+      <AdminSidebar 
+        isOpen={showAdminSidebar}
+        onClose={() => setShowAdminSidebar(false)}
+        onNavigate={handleAdminNavigate}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -384,7 +429,43 @@ export default function Home() {
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Debug Controls</h3>
               
-              {/* Basic Controls */}
+              {/* Password Protection */}
+              {!isDebugAuthenticated ? (
+                <div className="mb-6">
+                  <h4 className="text-md font-medium text-gray-700 mb-3">Enter Debug Password</h4>
+                  <form onSubmit={handleDebugPasswordSubmit} className="flex items-center space-x-3">
+                    <input
+                      type="password"
+                      value={debugPassword}
+                      onChange={(e) => setDebugPassword(e.target.value)}
+                      placeholder="Debug password"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Unlock
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm text-green-600 font-medium">🔓 Debug tools unlocked</span>
+                    <button
+                      onClick={() => {
+                        setIsDebugAuthenticated(false);
+                        setDebugPassword("");
+                      }}
+                      className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      Lock
+                    </button>
+                  </div>
+                  
+                  {/* Basic Controls */}
               <div className="mb-6">
                 <h4 className="text-md font-medium text-gray-700 mb-3">Basic Operations</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -453,6 +534,8 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+                </>
+              )}
             </div>
           </div>
         )}
