@@ -39,6 +39,9 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [showRequirements, setShowRequirements] = useState(false);
   const [showHideConfirm, setShowHideConfirm] = useState(false);
   const [isHiding, setIsHiding] = useState(false);
+  const [showPriceEdit, setShowPriceEdit] = useState(false);
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const [newPrice, setNewPrice] = useState<string>(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
 
   const handleAction = async (action: string) => {
     setLocalLog("");
@@ -53,6 +56,39 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
     } finally {
       setIsHiding(false);
       setShowHideConfirm(false);
+    }
+  };
+
+  const handlePriceUpdate = async () => {
+    const priceInCents = Math.round(parseFloat(newPrice) * 100);
+    if (isNaN(priceInCents) || priceInCents < 0) {
+      alert('Please enter a valid price');
+      return;
+    }
+
+    setIsUpdatingPrice(true);
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/update-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pricePerExecutionCents: priceInCents }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the agent in the parent component
+        await onAction('refresh-agent', agent.id);
+        setShowPriceEdit(false);
+      } else {
+        alert(`Failed to update price: ${result.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      alert(`Error updating price: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdatingPrice(false);
     }
   };
 
@@ -72,13 +108,21 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
       color: "bg-indigo-700 hover:bg-indigo-800",
       description: "View input/output requirements"
     },
-    // Add hide/unhide button for debug mode
-    ...(debugEnabled ? [{
-      name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
-      action: agent.isHidden ? "unhide" : "hide",
-      color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
-      description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
-    }] : [])
+    // Add debug mode buttons
+    ...(debugEnabled ? [
+      {
+        name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
+        action: agent.isHidden ? "unhide" : "hide",
+        color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
+        description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
+      },
+      {
+        name: "Edit Price",
+        action: "edit-price",
+        color: "bg-purple-700 hover:bg-purple-800",
+        description: "Edit the price per execution"
+      }
+    ] : [])
   ] : [
     { 
       name: "View Requirements", 
@@ -116,13 +160,21 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
       color: "bg-amber-800 hover:bg-amber-900",
       description: "Create & simulate receipt"
     },
-    // Add hide/unhide button for debug mode
-    ...(debugEnabled ? [{
-      name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
-      action: agent.isHidden ? "unhide" : "hide",
-      color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
-      description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
-    }] : [])
+    // Add debug mode buttons
+    ...(debugEnabled ? [
+      {
+        name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
+        action: agent.isHidden ? "unhide" : "hide",
+        color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
+        description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
+      },
+      {
+        name: "Edit Price",
+        action: "edit-price",
+        color: "bg-purple-700 hover:bg-purple-800",
+        description: "Edit the price per execution"
+      }
+    ] : [])
   ];
 
   // Get stats from agent data or use defaults
@@ -153,7 +205,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
     failureRate: `${failureRate}%`,
     uptime: uptime
   } : {
-    price: "$25 per site page",
+    price: agent.pricePerExecutionCents ? `$${(agent.pricePerExecutionCents / 100).toFixed(2)} per execution` : "Free",
     successRate: "93%",
     avgDuration: "7 minutes",
     jobsCompleted: "420",
@@ -244,6 +296,8 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                     setShowRequirements(true);
                   } else if (action.action === 'hide' || action.action === 'unhide') {
                     setShowHideConfirm(true);
+                  } else if (action.action === 'edit-price') {
+                    setShowPriceEdit(true);
                   } else {
                     handleAction(action.action);
                   }
@@ -308,6 +362,59 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                 } disabled:opacity-50`}
               >
                 {isHiding ? 'Processing...' : (agent.isHidden ? 'Unhide' : 'Hide')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Price Edit Modal */}
+      {showPriceEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Edit Agent Price
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Set the price per execution for &quot;{agent.name}&quot;
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price per execution (USD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="0.00"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Current price: ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowPriceEdit(false);
+                  setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+                }}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isUpdatingPrice}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePriceUpdate}
+                disabled={isUpdatingPrice}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              >
+                {isUpdatingPrice ? 'Updating...' : 'Update Price'}
               </button>
             </div>
           </div>

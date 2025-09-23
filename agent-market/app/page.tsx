@@ -24,6 +24,7 @@ interface Agent {
   triggerType?: string;
   isActive?: boolean;
   isHidden?: boolean;
+  pricePerExecutionCents?: number;
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
@@ -365,6 +366,11 @@ export default function Home() {
           } else {
             setLog(`❌ Failed to toggle visibility: ${toggleResult?.message || 'Unknown error'}`);
           }
+          break;
+        case "refresh-agent":
+          // Refresh a specific agent by refetching all agents
+          await fetchAgents();
+          setLog(`✅ Agent ${agentId} refreshed`);
           break;
         default:
           setLog(`Unknown action: ${action}`);
