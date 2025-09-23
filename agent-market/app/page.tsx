@@ -130,6 +130,13 @@ export default function Home() {
         setShowStripeTest(false);
         setShowDebugMenu(false);
         break;
+      case 'debug':
+        setShowDebugMenu(true);
+        setShowAdminSidebar(false);
+        setShowCreditHistory(false);
+        setShowCreditPurchase(false);
+        setShowStripeTest(false);
+        break;
       default:
         break;
     }
@@ -392,7 +399,10 @@ export default function Home() {
         onNavigate={handleSidebarNavigate}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={`transition-all duration-300 ${
+        showAdminSidebar ? 'mr-0' : 'mr-0'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Credit Purchase */}
         {showCreditPurchase && (
@@ -599,6 +609,7 @@ export default function Home() {
           </div>
         )}
 
+        </div>
       </div>
     </main>
   );

@@ -14,15 +14,15 @@ export default function FloatingSidebar({ onNavigate }: FloatingSidebarProps) {
   };
 
   return (
-    <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
-      <div className={`bg-white rounded-lg shadow-lg border border-gray-200 transition-all duration-300 ${
+    <div className="fixed left-0 top-0 h-full z-30">
+      <div className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 h-full ${
         isExpanded ? 'w-64' : 'w-16'
       }`}>
         
         {/* Toggle Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-4 flex items-center justify-center hover:bg-gray-50 transition-colors rounded-t-lg"
+          className="w-full p-4 flex items-center justify-center hover:bg-gray-50 transition-colors"
         >
           <svg className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${
             isExpanded ? 'rotate-180' : ''
@@ -82,21 +82,6 @@ export default function FloatingSidebar({ onNavigate }: FloatingSidebarProps) {
             )}
           </button>
 
-          {/* Stripe Testing */}
-          <button
-            onClick={() => handleMenuClick('stripe-test')}
-            className={`w-full p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center ${
-              isExpanded ? 'space-x-3' : 'justify-center'
-            }`}
-            title={!isExpanded ? "Stripe Testing" : ""}
-          >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-            {isExpanded && (
-              <span className="text-sm font-medium text-gray-700">Stripe Testing</span>
-            )}
-          </button>
         </div>
       </div>
     </div>

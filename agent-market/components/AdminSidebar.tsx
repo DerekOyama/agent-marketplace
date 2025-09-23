@@ -35,15 +35,15 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate }: AdminSideb
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50"
+        className="fixed inset-0 bg-black bg-opacity-30"
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className="relative w-80 bg-white shadow-xl">
+      <div className="relative w-96 bg-white shadow-xl h-full overflow-y-auto">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
