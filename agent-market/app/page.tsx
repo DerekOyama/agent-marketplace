@@ -3,9 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
-import CreditPurchase from "../components/CreditPurchase";
-import CreditHistory from "../components/CreditHistory";
-import StripePaymentTest from "../components/StripePaymentTest";
 import AdminSidebar from "../components/AdminSidebar";
 import { useAdmin } from "../lib/use-admin";
 import Link from "next/link";
@@ -419,26 +416,6 @@ export default function Home() {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Credit Purchase */}
-        {showCreditPurchase && (
-          <div className="mb-8">
-            <CreditPurchase />
-          </div>
-        )}
-
-        {/* Credit History */}
-        {showCreditHistory && (
-          <div className="mb-8">
-            <CreditHistory refreshTrigger={creditRefreshTrigger} />
-          </div>
-        )}
-
-        {/* Stripe Payment Test */}
-        {showStripeTest && (
-          <div className="mb-8">
-            <StripePaymentTest />
-          </div>
-        )}
 
         {/* Debug Menu - Only visible to admins */}
         {isAdmin && showDebugMenu && (
