@@ -179,14 +179,14 @@ export class ApiWrapper {
    */
   static error(
     error: unknown,
-    _statusCode: number = 500,
+    statusCode: number = 500,
     traceId?: string
   ): NextResponse {
     const errorDetails = ErrorMapper.mapError(error, traceId);
     const response = ErrorMapper.createErrorResponse(errorDetails);
 
     return NextResponse.json(response, {
-      status: errorDetails.statusCode,
+      status: statusCode,
       headers: {
         'Content-Type': 'application/json',
         ...(traceId && { 'X-Trace-ID': traceId })

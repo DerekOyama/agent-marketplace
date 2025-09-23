@@ -247,12 +247,7 @@ export const CommonAgentSchemas = {
       properties: {
         data: { 
           type: "object" as const, 
-          description: "Input data for the n8n workflow",
-          properties: {
-            text: { type: "string" as const, description: "Text input for processing" }
-          },
-          required: ["text"],
-          additionalProperties: true
+          description: "Input data for the n8n workflow"
         }
       },
       required: ["data"],

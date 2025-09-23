@@ -286,7 +286,7 @@ export default function N8nVerificationPage() {
                     This will be shown to users as an example of what your agent returns. 
                     {testOutput.includes('"echo": null') && (
                       <span className="text-amber-600 font-medium block mt-1">
-                        ⚠️ Note: Your n8n workflow returned {`{"echo": null}`}. This suggests your workflow might not be properly configured to return meaningful data. Check your n8n workflow to ensure it's processing the input and returning a proper response.
+                        ⚠️ Note: Your n8n workflow returned {`{"echo": null}`}. This suggests your workflow might not be properly configured to return meaningful data. Check your n8n workflow to ensure it&apos;s processing the input and returning a proper response.
                       </span>
                     )}
                     {testOutput === "Empty response from n8n workflow" && (
