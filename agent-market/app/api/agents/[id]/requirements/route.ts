@@ -138,6 +138,12 @@ function generateExampleInput(schema: Record<string, unknown> | null): Record<st
     return { data: { text: "Hello from the agent marketplace!" } };
   }
 
+  // Special handling for webhook agents - they expect data.text format
+  const props = schema.properties as Record<string, unknown>;
+  if (props.text && !props.data) {
+    return { data: { text: "Hello from the agent marketplace!" } };
+  }
+
   const example: Record<string, unknown> = {};
   
   for (const [key, prop] of Object.entries(schema.properties as Record<string, unknown>)) {
@@ -213,7 +219,13 @@ function generateExampleOutput(schema: Record<string, unknown> | null): Record<s
 
 function getInputDescription(schema: Record<string, unknown> | null): string {
   if (!schema) {
-    return "Standard agent input format. Send your input data in the 'data' field with a 'text' property for processing.";
+    return "Send your input data in the 'data' field with a 'text' property for processing.";
+  }
+
+  // Special handling for webhook agents
+  const props = schema.properties as Record<string, unknown>;
+  if (props.text && !props.data) {
+    return "Send your input data in the 'data' field with a 'text' property for processing.";
   }
 
   if (schema && schema.properties && typeof schema.properties === 'object' && schema.properties !== null && 'data' in schema.properties) {

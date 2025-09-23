@@ -245,12 +245,12 @@ export const CommonAgentSchemas = {
     input: {
       type: "object" as const,
       properties: {
-        data: { 
-          type: "object" as const, 
-          description: "Input data for the n8n workflow"
+        text: { 
+          type: "string" as const, 
+          description: "Text input for processing"
         }
       },
-      required: ["data"],
+      required: ["text"],
       additionalProperties: true
     } as AgentInputSchema,
     output: {
