@@ -107,13 +107,12 @@ export async function GET(
         example: generateExampleOutput(outputSchema as Record<string, unknown> | null),
       },
       usage: {
-        endpoint: agent.webhookUrl || `/api/n8n/execute`,
+        endpoint: `/api/agents/${agent.id}/execute`,
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: {
-          agentId: agent.id,
           inputData: exampleInput
         }
       }
@@ -138,7 +137,7 @@ export async function GET(
 
 function generateExampleInput(schema: Record<string, unknown> | null): Record<string, unknown> {
   if (!schema || !schema.properties) {
-    return { data: { message: "Hello, agent!" } };
+    return { data: { text: "Hello from the agent marketplace!" } };
   }
 
   const example: Record<string, unknown> = {};
@@ -151,7 +150,7 @@ function generateExampleInput(schema: Record<string, unknown> | null): Record<st
       } else if (key.toLowerCase().includes('url')) {
         example[key] = "https://example.com";
       } else if (key.toLowerCase().includes('text')) {
-        example[key] = "Sample text input";
+        example[key] = "Hello from the agent marketplace!";
       } else if (key.toLowerCase().includes('message')) {
         example[key] = "Hello from the agent marketplace!";
       } else {
@@ -216,7 +215,7 @@ function generateExampleOutput(schema: Record<string, unknown> | null): Record<s
 
 function getInputDescription(schema: Record<string, unknown> | null): string {
   if (!schema) {
-    return "Flexible input format. Send any JSON data in the 'data' field.";
+    return "Standard agent input format. Send your input data in the 'data' field with a 'text' property for processing.";
   }
 
   if (schema && schema.properties && typeof schema.properties === 'object' && schema.properties !== null && 'data' in schema.properties) {
@@ -224,11 +223,11 @@ function getInputDescription(schema: Record<string, unknown> | null): string {
     const propNames = Object.keys(dataProps);
     
     if (propNames.length > 0) {
-      return `Input requires a 'data' object with the following fields: ${propNames.join(', ')}.`;
+      return `Input requires a 'data' object with the following fields: ${propNames.join(', ')}. Include a 'text' field with your input.`;
     }
   }
 
-  return "Send your input data in the 'data' field of the request body.";
+  return "Send your input data in the 'data' field of the request body. Include a 'text' field with your input.";
 }
 
 function getOutputDescription(schema: Record<string, unknown> | null): string {

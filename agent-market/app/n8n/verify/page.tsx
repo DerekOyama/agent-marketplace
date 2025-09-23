@@ -80,9 +80,19 @@ export default function N8nVerificationPage() {
       });
 
       const data = await response.json();
+      console.log('Test response data:', data);
 
       if (data.success) {
-        setTestOutput(data.output || "Agent responded successfully");
+        // Display the actual response from n8n, not just a generic message
+        let outputToShow;
+        if (data.isEmpty) {
+          outputToShow = "Empty response from n8n workflow";
+        } else if (data.output) {
+          outputToShow = JSON.stringify(data.output, null, 2);
+        } else {
+          outputToShow = "Agent responded successfully";
+        }
+        setTestOutput(outputToShow);
         setError("");
       } else {
         setError(data.error || "Agent test failed");
@@ -224,8 +234,8 @@ export default function N8nVerificationPage() {
                 <p className="text-gray-900">{agentData.inputRequirements}</p>
               </div>
               <div className="md:col-span-2">
-                <span className="font-medium text-gray-800">Webhook URL:</span>
-                <p className="text-gray-900 font-mono text-xs break-all bg-gray-100 p-2 rounded">{agentData.webhookUrl}</p>
+                <span className="font-medium text-gray-800">Integration Type:</span>
+                <p className="text-gray-900">N8n Workflow</p>
               </div>
             </div>
           </div>
@@ -245,7 +255,7 @@ export default function N8nVerificationPage() {
                 <textarea
                   value={exampleInput}
                   onChange={(e) => setExampleInput(e.target.value)}
-                  placeholder={`Example JSON input:\n{\n  "email": "user@example.com",\n  "message": "Hello from the marketplace",\n  "recipient": "John Doe"\n}`}
+                  placeholder={`Example JSON input:\n{\n  "data": {\n    "text": "Hello from the agent marketplace!"\n  }\n}`}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none font-mono text-sm"
                 />
@@ -273,7 +283,17 @@ export default function N8nVerificationPage() {
                     {typeof testOutput === 'string' ? testOutput : JSON.stringify(testOutput, null, 2)}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    This will be shown to users as an example of what your agent returns
+                    This will be shown to users as an example of what your agent returns. 
+                    {testOutput.includes('"echo": null') && (
+                      <span className="text-amber-600 font-medium block mt-1">
+                        ⚠️ Note: Your n8n workflow returned {`{"echo": null}`}. This suggests your workflow might not be properly configured to return meaningful data. Check your n8n workflow to ensure it's processing the input and returning a proper response.
+                      </span>
+                    )}
+                    {testOutput === "Empty response from n8n workflow" && (
+                      <span className="text-red-600 font-medium block mt-1">
+                        ⚠️ Warning: Your n8n workflow returned an empty response. Make sure your workflow is active and configured to return data.
+                      </span>
+                    )}
                   </p>
                 </div>
               )}

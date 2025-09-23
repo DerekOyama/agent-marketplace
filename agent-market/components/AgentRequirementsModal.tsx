@@ -236,12 +236,15 @@ export default function AgentRequirementsModal({
                       </p>
                     </div>
 
-                    {/* Run URL */}
+                    {/* API Endpoint */}
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Agent Run URL:</h4>
+                      <h4 className="font-semibold text-gray-900 mb-2">API Endpoint:</h4>
                       <div className="bg-gray-100 p-3 rounded-lg border border-gray-300">
                         <code className="text-sm text-gray-900 break-all">{requirements.usage.endpoint}</code>
                       </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Use this endpoint to execute the agent with your input data
+                      </p>
                     </div>
 
                     <div className="grid gap-6">

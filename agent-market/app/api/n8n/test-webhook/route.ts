@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     };
 
+    console.log('Sending test payload to n8n:', JSON.stringify(testPayload, null, 2));
+
     // Test the webhook from the server side to avoid CORS issues
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -45,13 +47,16 @@ export async function POST(req: NextRequest) {
 
     if (response.ok) {
       const responseData = await response.text();
-      console.log('Webhook response data:', responseData);
+      console.log('Webhook response data (raw):', responseData);
+      console.log('Webhook response data length:', responseData.length);
       
       // Try to parse as JSON, fallback to text
       let output;
       try {
         output = JSON.parse(responseData);
-      } catch {
+        console.log('Parsed JSON output:', output);
+      } catch (parseError) {
+        console.log('Failed to parse as JSON, using raw text:', parseError);
         output = responseData;
       }
       
@@ -60,6 +65,9 @@ export async function POST(req: NextRequest) {
         status: response.status,
         statusText: response.statusText,
         output: output,
+        rawResponse: responseData, // Include raw response for debugging
+        responseType: typeof output,
+        isEmpty: !responseData || responseData.trim() === '',
         message: "Webhook test successful"
       });
     } else {

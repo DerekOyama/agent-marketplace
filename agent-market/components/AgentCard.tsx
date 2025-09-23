@@ -154,7 +154,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
               <div>
                 <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
                 <p className="text-xs text-gray-500 font-mono">ID: {agent.id.slice(0, 8)}...</p>
-                {/* N8n badge removed from overview */}
               </div>
             </div>
             <div className="flex items-center space-x-2">
