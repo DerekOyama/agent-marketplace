@@ -35,7 +35,14 @@ export default function N8nVerificationPage() {
     try {
       const stored = sessionStorage.getItem("pendingAgentVerification");
       if (stored) {
-        setAgentData(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Validate the parsed data has required fields
+        if (parsed && parsed.webhookUrl && parsed.name && parsed.inputRequirements && parsed.pricePerExecutionCents) {
+          setAgentData(parsed);
+        } else {
+          console.error("Invalid agent data structure:", parsed);
+          router.push("/n8n");
+        }
       } else {
         router.push("/n8n");
       }
@@ -46,7 +53,7 @@ export default function N8nVerificationPage() {
   }, [status, router]);
 
   const testAgent = async () => {
-    if (!agentData || !exampleInput || !exampleInput.trim()) {
+    if (!agentData || !exampleInput || typeof exampleInput !== 'string' || !exampleInput.trim()) {
       setError("Please provide example input to test your agent");
       return;
     }
@@ -90,7 +97,7 @@ export default function N8nVerificationPage() {
   };
 
   const createAgent = async () => {
-    if (!agentData || !exampleInput || !exampleInput.trim() || !testOutput || !testOutput.trim()) {
+    if (!agentData || !exampleInput || typeof exampleInput !== 'string' || !exampleInput.trim() || !testOutput || typeof testOutput !== 'string' || !testOutput.trim()) {
       setError("Please test your agent with example input/output before creating");
       return;
     }
@@ -250,7 +257,7 @@ export default function N8nVerificationPage() {
               <div className="flex space-x-3">
                 <button
                   onClick={testAgent}
-                  disabled={loading || !exampleInput || !exampleInput.trim()}
+                  disabled={loading || !exampleInput || typeof exampleInput !== 'string' || !exampleInput.trim()}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Testing..." : "Test Agent"}
@@ -284,7 +291,7 @@ export default function N8nVerificationPage() {
           <div className="text-center">
             <button
               onClick={createAgent}
-              disabled={loading || !exampleInput || !exampleInput.trim() || !testOutput || !testOutput.trim() || showSuccess}
+              disabled={loading || !exampleInput || typeof exampleInput !== 'string' || !exampleInput.trim() || !testOutput || typeof testOutput !== 'string' || !testOutput.trim() || showSuccess}
               className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-medium text-lg"
             >
               {loading ? "Creating Agent..." : showSuccess ? "Agent Created!" : "Create Agent & Go Live"}
