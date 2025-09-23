@@ -5,7 +5,10 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get('mode') || 'full'; // 'light' or 'full'
+    const debugMode = url.searchParams.get('debug') === 'true';
+    
     const agents = await prisma.agent.findMany({
+      where: debugMode ? {} : { isHidden: false }, // Show hidden agents only in debug mode
       orderBy: { createdAt: 'desc' }, // Newest first
       select: { 
         id: true, 
@@ -20,6 +23,7 @@ export async function GET(req: Request) {
         webhookUrl: true,
         triggerType: true,
         isActive: true,
+        isHidden: true,
         metadata: true,
         pricing: true,
         stats: mode === 'full',

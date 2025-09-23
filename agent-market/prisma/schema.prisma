@@ -39,6 +39,7 @@ model Agent {
   webhookUrl       String?
   triggerType      String?
   isActive         Boolean                @default(true)
+  isHidden         Boolean                @default(false)
   metadata         Json?
   pricing          Json?
   stats            Json?

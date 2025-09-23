@@ -22,6 +22,7 @@ interface Agent {
   webhookUrl?: string;
   triggerType?: string;
   isActive?: boolean;
+  isHidden?: boolean;
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
@@ -49,7 +50,8 @@ export default function Home() {
     setLoading(true);
     try {
       // Fast path: load light list first (no heavy stats)
-      const res = await fetch("/api/agents?mode=light");
+      const debugParam = isDebugAuthenticated ? "&debug=true" : "";
+      const res = await fetch(`/api/agents?mode=light${debugParam}`);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
       
@@ -68,7 +70,7 @@ export default function Home() {
 
         // Background upgrade to full stats without blocking UI
         try {
-          const fullRes = await fetch("/api/agents?mode=full");
+          const fullRes = await fetch(`/api/agents?mode=full${debugParam}`);
           if (fullRes.ok) {
             const fullText = await fullRes.text();
             const fullData = fullText ? JSON.parse(fullText) : {};
@@ -87,7 +89,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isDebugAuthenticated]);
 
   useEffect(() => {
     // Hydrate from cache for fast first paint
@@ -351,6 +353,20 @@ export default function Home() {
             setTimeout(() => {
               fetchAgents();
             }, 1000); // Wait 1 second for database updates to complete
+          }
+          break;
+        case "toggle-visibility":
+          const toggleResult = await post(`/api/agents/${agentId}/toggle-visibility`, {}) as { 
+            success?: boolean; 
+            message?: string;
+            agent?: { id: string; name: string; isHidden: boolean };
+          };
+          if (toggleResult?.success) {
+            setLog(`✅ ${toggleResult.message}`);
+            // Refresh agents to show updated visibility status
+            await fetchAgents();
+          } else {
+            setLog(`❌ Failed to toggle visibility: ${toggleResult?.message || 'Unknown error'}`);
           }
           break;
         default:

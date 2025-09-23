@@ -14,6 +14,7 @@ interface Agent {
   webhookUrl?: string;
   triggerType?: string;
   isActive?: boolean;
+  isHidden?: boolean;
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
@@ -36,11 +37,23 @@ interface AgentCardProps {
 export default function AgentCard({ agent, onAction, loading, log, debugEnabled = false }: AgentCardProps) {
   const [localLog, setLocalLog] = useState<string>("");
   const [showRequirements, setShowRequirements] = useState(false);
+  const [showHideConfirm, setShowHideConfirm] = useState(false);
+  const [isHiding, setIsHiding] = useState(false);
 
   const handleAction = async (action: string) => {
     setLocalLog("");
     await onAction(action, agent.id);
     setLocalLog(log);
+  };
+
+  const handleToggleVisibility = async () => {
+    setIsHiding(true);
+    try {
+      await onAction('toggle-visibility', agent.id);
+    } finally {
+      setIsHiding(false);
+      setShowHideConfirm(false);
+    }
   };
 
   const isN8nAgent = agent.type === 'n8n';
@@ -58,7 +71,14 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
       action: "requirements", 
       color: "bg-indigo-700 hover:bg-indigo-800",
       description: "View input/output requirements"
-    }
+    },
+    // Add hide/unhide button for debug mode
+    ...(debugEnabled ? [{
+      name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
+      action: agent.isHidden ? "unhide" : "hide",
+      color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
+      description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
+    }] : [])
   ] : [
     { 
       name: "View Requirements", 
@@ -95,7 +115,14 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
       action: "receipt", 
       color: "bg-amber-800 hover:bg-amber-900",
       description: "Create & simulate receipt"
-    }
+    },
+    // Add hide/unhide button for debug mode
+    ...(debugEnabled ? [{
+      name: agent.isHidden ? "Unhide Agent" : "Hide Agent",
+      action: agent.isHidden ? "unhide" : "hide",
+      color: agent.isHidden ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800",
+      description: agent.isHidden ? "Make agent visible to users" : "Hide agent from users"
+    }] : [])
   ];
 
   // Get stats from agent data or use defaults
@@ -152,7 +179,14 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                 </span>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-gray-900">{agent.name}</h3>
+                  {agent.isHidden && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      👁️ Hidden
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 font-mono">ID: {agent.id.slice(0, 8)}...</p>
               </div>
             </div>
@@ -205,7 +239,15 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
             {actions.map((action) => (
               <button
                 key={action.action}
-                onClick={() => action.action === 'requirements' ? setShowRequirements(true) : handleAction(action.action)}
+                onClick={() => {
+                  if (action.action === 'requirements') {
+                    setShowRequirements(true);
+                  } else if (action.action === 'hide' || action.action === 'unhide') {
+                    setShowHideConfirm(true);
+                  } else {
+                    handleAction(action.action);
+                  }
+                }}
                 disabled={loading}
                 className={`px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${action.color} hover:shadow-md`}
                 title={action.description}
@@ -234,6 +276,43 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         isOpen={showRequirements}
         onClose={() => setShowRequirements(false)}
       />
+
+      {/* Hide/Unhide Confirmation Modal */}
+      {showHideConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {agent.isHidden ? 'Unhide Agent' : 'Hide Agent'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {agent.isHidden 
+                ? `Are you sure you want to make "${agent.name}" visible to all users?`
+                : `Are you sure you want to hide "${agent.name}" from users? It will no longer appear in the agent list.`
+              }
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowHideConfirm(false)}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isHiding}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleToggleVisibility}
+                disabled={isHiding}
+                className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                  agent.isHidden 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-red-600 hover:bg-red-700'
+                } disabled:opacity-50`}
+              >
+                {isHiding ? 'Processing...' : (agent.isHidden ? 'Unhide' : 'Hide')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
