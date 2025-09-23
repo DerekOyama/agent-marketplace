@@ -354,8 +354,14 @@ export default function Home() {
           };
           if (toggleResult?.success) {
             setLog(`✅ ${toggleResult.message}`);
-            // Refresh agents to show updated visibility status
-            await fetchAgents();
+            // Update the specific agent in the list instead of refreshing all
+            setAgents(prevAgents => 
+              prevAgents.map(agent => 
+                agent.id === agentId 
+                  ? { ...agent, isHidden: toggleResult.agent?.isHidden ?? !agent.isHidden }
+                  : agent
+              )
+            );
           } else {
             setLog(`❌ Failed to toggle visibility: ${toggleResult?.message || 'Unknown error'}`);
           }
@@ -372,14 +378,34 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">AI Agent Marketplace</h1>
-              <p className="mt-2 text-gray-600">
-                Manage and test your AI agents with professional debugging tools
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ml-16">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center py-8">
+            <div className="mb-4 lg:mb-0">
+              <h1 className="text-4xl font-bold mb-2">AI Agent Marketplace</h1>
+              <p className="text-blue-100 text-lg">
+                Discover, purchase, and execute AI agents for your business needs
               </p>
+              <div className="mt-3 flex items-center space-x-4 text-sm text-blue-200">
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Ready-to-use agents
+                </span>
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  Pay per execution
+                </span>
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Easy integration
+                </span>
+              </div>
             </div>
             
             {/* Top Navigation */}
@@ -390,7 +416,7 @@ export default function Home() {
               />
               <Link
                 href="/funds"
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium text-sm flex items-center space-x-2"
+                className="px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm flex items-center space-x-2 shadow-lg"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m0-4h4m-4 0l-2-2m2 2l-2 2" />
@@ -417,7 +443,7 @@ export default function Home() {
       <div className={`transition-all duration-300 ${
         showAdminSidebar ? 'mr-0' : 'mr-0'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ml-16">
 
         {/* Credit Purchase */}
         {showCreditPurchase && (
@@ -574,27 +600,28 @@ export default function Home() {
             ))
           ) : (
             !loading && <div className="col-span-full text-center py-16">
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 max-w-lg mx-auto">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-12 max-w-2xl mx-auto">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Agents Found</h3>
-                <p className="text-gray-600 mb-8">
-                  Get started by creating your first AI agent or connecting n8n workflows.
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the AI Agent Marketplace</h3>
+                <p className="text-gray-600 mb-8 text-lg">
+                  Discover powerful AI agents ready to execute your business tasks. 
+                  Browse our collection of pre-built agents or create your own custom solutions.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
                     onClick={() => handleAgentAction("seed", "")}
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:bg-gray-400 transition-all duration-200 font-medium shadow-lg"
                   >
                     {loading ? "Loading..." : "Create Test Agent"}
                   </button>
                   <Link 
                     href="/n8n" 
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
+                    className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-300 shadow-sm text-center"
                   >
                     Connect N8n Workflows
                   </Link>
