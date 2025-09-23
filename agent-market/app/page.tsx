@@ -48,7 +48,8 @@ export default function Home() {
   const fetchAgents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/agents");
+      // Fast path: load light list first (no heavy stats)
+      const res = await fetch("/api/agents?mode=light");
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
       
@@ -61,26 +62,22 @@ export default function Home() {
       }
       
       if (data.agents && data.agents.length > 0) {
-        // Fetch real-time stats for each agent
-        const agentsWithStats = await Promise.all(
-          data.agents.map(async (agent) => {
-            try {
-              const statsRes = await fetch(`/api/agents/${agent.id}/stats`);
-              if (statsRes.ok) {
-                const statsData = await statsRes.json();
-                return {
-                  ...agent,
-                  stats: statsData.stats
-                };
-              }
-            } catch (error) {
-              console.warn(`Failed to fetch stats for agent ${agent.id}:`, error);
+        // Show light list immediately
+        setAgents(data.agents);
+        try { localStorage.setItem("agentsCache", JSON.stringify(data.agents)); } catch {}
+
+        // Background upgrade to full stats without blocking UI
+        try {
+          const fullRes = await fetch("/api/agents?mode=full");
+          if (fullRes.ok) {
+            const fullText = await fullRes.text();
+            const fullData = fullText ? JSON.parse(fullText) : {};
+            if (fullData.agents) {
+              setAgents(fullData.agents);
+              try { localStorage.setItem("agentsCache", JSON.stringify(fullData.agents)); } catch {}
             }
-            return agent;
-          })
-        );
-        setAgents(agentsWithStats);
-        try { localStorage.setItem("agentsCache", JSON.stringify(agentsWithStats)); } catch {}
+          }
+        } catch {}
       } else {
         setAgents([]);
       }
@@ -170,14 +167,7 @@ export default function Home() {
     }
   };
 
-  // Real-time metrics refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchAgents();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [fetchAgents]);
+  // Removed auto-refresh - users must manually refresh page to update agents
 
   async function post(url: string, body?: Record<string, unknown>) {
     setLoading(true);

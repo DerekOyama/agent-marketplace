@@ -5,10 +5,12 @@ import CreditHistory from "../../components/CreditHistory";
 import CreditBalance from "../../components/CreditBalance";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 
 function FundsPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { status } = useSession();
     const paymentStatus = useMemo(() => searchParams.get("payment"), [searchParams]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -116,12 +118,31 @@ function FundsPageContent() {
 
         {/* Add Funds Component */}
         <div className="max-w-3xl mx-auto mb-8">
-          <CreditPurchase />
+          {status === "authenticated" ? (
+            <CreditPurchase />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sign in to manage your wallet</h3>
+              <p className="text-gray-700 mb-4">You can view this page, but you must sign in to add funds or view history.</p>
+              <button
+                onClick={() => signIn("google")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Sign in with Google
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Credit History */}
         <div className="max-w-3xl mx-auto">
-          <CreditHistory refreshTrigger={refreshTrigger} />
+          {status === "authenticated" ? (
+            <CreditHistory refreshTrigger={refreshTrigger} />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
+              Sign in to view your balance history.
+            </div>
+          )}
         </div>
 			</div>
 		</main>

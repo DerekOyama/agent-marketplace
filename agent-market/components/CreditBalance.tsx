@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 interface User {
   id: string;
@@ -19,6 +20,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { status } = useSession();
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -80,6 +82,11 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   }, [onBalanceUpdate]);
 
   useEffect(() => {
+    // If not authenticated, don't fetch; just show CTA quickly
+    if (status !== "authenticated") {
+      setLoading(false);
+      return;
+    }
     // Hydrate from cache immediately for fast UI
     try {
       const cached = localStorage.getItem("walletBalanceCents");
@@ -97,7 +104,7 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
       }
     } catch {}
     fetchBalance();
-  }, [fetchBalance]);
+  }, [fetchBalance, status]);
 
   // Watch for refresh trigger changes
   useEffect(() => {
@@ -129,6 +136,23 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
     );
   }
 
+  // If not authenticated, show Sign in button instead of $0.00
+  if (status !== "authenticated") {
+    return (
+      <button
+        onClick={() => signIn("google")}
+        className={`flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300`}
+        title="Sign in with Google to view your wallet"
+      >
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2" />
+        </svg>
+        <span className="text-sm font-medium text-gray-800">Wallet:</span>
+        <span className="text-sm font-bold text-gray-900">Sign in with Google</span>
+      </button>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex items-center space-x-2 px-4 py-2 bg-red-50 rounded-lg shadow-sm border border-red-200">
@@ -150,7 +174,11 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
     <div className={`flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${isUpdating ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}>
       <button
         onClick={() => {
-          window.location.href = '/funds';
+          if (status !== "authenticated") {
+            signIn("google");
+          } else {
+            window.location.href = '/funds';
+          }
         }}
         title="View wallet / Add funds"
         className="flex items-center space-x-1 group"

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { getCurrentUserId } from "../../../lib/auth";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // GET - Get user's current credit balance
 export async function GET() {
   try {
-    const userId = await getCurrentUserId();
+    // Resolve session directly here to avoid framework/version differences
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("../../../lib/auth-config");
+    const session = await getServerSession(authOptions as import("next-auth").NextAuthOptions);
+    const userId = (session?.user as { id?: string } | undefined)?.id ?? null;
     if (!userId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
@@ -35,13 +41,28 @@ export async function GET() {
 // POST - Update user's credit balance (for adding credits, etc.)
 export async function POST(req: NextRequest) {
   try {
-    const { amountCents, operation = "add" } = await req.json();
-    const userId = await getCurrentUserId();
+    let amountCents: number | null = null;
+    let operation: string = "add";
+    try {
+      const bodyText = await req.text();
+      if (bodyText && bodyText.trim().length > 0) {
+        const body = JSON.parse(bodyText);
+        amountCents = typeof body.amountCents === "number" ? body.amountCents : null;
+        operation = typeof body.operation === "string" ? body.operation : "add";
+      }
+    } catch {
+      // Bad JSON body; treat as invalid input rather than throwing 500
+      return NextResponse.json({ error: "bad_request", message: "Invalid JSON body" }, { status: 400 });
+    }
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("../../../lib/auth-config");
+    const session = await getServerSession(authOptions as import("next-auth").NextAuthOptions);
+    const userId = (session?.user as { id?: string } | undefined)?.id ?? null;
     if (!userId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
     
-    if (!amountCents || typeof amountCents !== "number") {
+    if (amountCents === null) {
       return NextResponse.json({ 
         error: "bad_request", 
         message: "amountCents is required and must be a number" 
