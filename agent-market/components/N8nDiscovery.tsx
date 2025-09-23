@@ -17,16 +17,18 @@ interface N8nInstance {
 }
 
 export default function N8nDiscovery() {
-  const [instanceUrl, setInstanceUrl] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [agentName, setAgentName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [instanceName, setInstanceName] = useState("");
   const [loading, setLoading] = useState(false);
   const [instance, setInstance] = useState<N8nInstance | null>(null);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<"webhook" | "api">("webhook");
 
-  const testConnection = async () => {
-    if (!instanceUrl || !apiKey) {
-      setError("Please enter both instance URL and API key");
+  const testWebhook = async () => {
+    if (!webhookUrl) {
+      setError("Please enter a webhook URL");
       return;
     }
 
@@ -34,25 +36,68 @@ export default function N8nDiscovery() {
     setError("");
 
     try {
-      // Clean up the instance URL - remove webhook paths and ensure it's the base URL
-      let cleanUrl = instanceUrl;
-      if (cleanUrl.includes('/webhook/')) {
-        cleanUrl = cleanUrl.split('/webhook/')[0];
-      }
-      if (cleanUrl.includes('/webhook-test/')) {
-        cleanUrl = cleanUrl.split('/webhook-test/')[0];
-      }
-      if (!cleanUrl.endsWith('/')) {
-        cleanUrl = cleanUrl + '/';
-      }
+      const response = await fetch("/api/n8n/test-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl }),
+      });
 
-      console.log('Cleaned URL:', cleanUrl);
+      const data = await response.json();
+
+      if (data.success) {
+        setInstance({
+          url: webhookUrl,
+          name: agentName || "Webhook Agent",
+          totalWorkflows: 1,
+          activeWorkflows: 1,
+          workflows: [{
+            id: "webhook-agent",
+            name: agentName || "Webhook Agent",
+            active: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }]
+        });
+        setError("");
+      } else {
+        setError(data.error || "Webhook test failed");
+        setInstance(null);
+      }
+    } catch (err) {
+      setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
+      setInstance(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testApiConnection = async () => {
+    if (!webhookUrl || !apiKey) {
+      setError("Please enter both webhook URL and API key");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Extract base URL from webhook URL
+      let baseUrl = webhookUrl;
+      if (baseUrl.includes('/webhook/')) {
+        baseUrl = baseUrl.split('/webhook/')[0];
+      }
+      if (baseUrl.includes('/webhook-test/')) {
+        baseUrl = baseUrl.split('/webhook-test/')[0];
+      }
+      if (!baseUrl.endsWith('/')) {
+        baseUrl = baseUrl + '/';
+      }
 
       const response = await fetch("/api/n8n/instances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          instanceUrl: cleanUrl,
+          instanceUrl: baseUrl,
           apiKey,
           name: instanceName,
         }),
@@ -62,22 +107,22 @@ export default function N8nDiscovery() {
 
       if (data.success) {
         setInstance(data.instance);
-        setError(""); // Clear any previous errors
+        setError("");
       } else {
         setError(data.error || "Failed to connect to n8n instance");
-        setInstance(null); // Clear instance on error
+        setInstance(null);
       }
     } catch (err) {
       setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
-      setInstance(null); // Clear instance on error
+      setInstance(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // Alternative: Test webhook connection via server proxy
-  const testWebhookConnection = async () => {
-    if (!instanceUrl) {
+
+  const registerAgent = async () => {
+    if (!webhookUrl) {
       setError("Please enter a webhook URL");
       return;
     }
@@ -86,76 +131,12 @@ export default function N8nDiscovery() {
     setError("");
 
     try {
-      // Test the webhook via server-side proxy to avoid CORS issues
-      const response = await fetch("/api/n8n/test-webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ webhookUrl: instanceUrl }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setInstance({
-          url: instanceUrl,
-          name: instanceName || "Webhook Instance",
-          totalWorkflows: 1,
-          activeWorkflows: 1,
-          workflows: [{
-            id: "webhook-test",
-            name: "Webhook Test",
-            active: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }]
-        });
-        setError(""); // Clear any previous errors
-      } else {
-        // Even if webhook test fails, create a test agent if we got a response
-        if (data.status === 404 && data.error && data.error.includes("webhook")) {
-          setInstance({
-            url: instanceUrl,
-            name: instanceName || "Webhook Instance (Needs Activation)",
-            totalWorkflows: 1,
-            activeWorkflows: 0,
-            workflows: [{
-              id: "webhook-test",
-              name: "Webhook Test (Click 'Execute workflow' in n8n first)",
-              active: false,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }]
-          });
-          setError("Webhook needs activation: Click 'Execute workflow' in n8n first, then try again");
-        } else {
-          setError(data.message || `Webhook test failed: ${data.status} ${data.statusText}`);
-        }
-      }
-    } catch (err) {
-      setError("Webhook test failed: " + (err instanceof Error ? err.message : "Unknown error"));
-      setInstance(null); // Clear instance on error
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const discoverWorkflows = async () => {
-    if (!instanceUrl) {
-      setError("Please enter a webhook URL");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      // For webhook-based workflows, we'll create a simple agent directly
       const response = await fetch("/api/n8n/register-webhook", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          webhookUrl: instanceUrl,
-          name: instanceName || "N8n Webhook Agent",
+          webhookUrl,
+          name: agentName || "N8n Webhook Agent",
         }),
       });
 
@@ -170,7 +151,6 @@ export default function N8nDiscovery() {
       }
     } catch (err) {
       setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
-      setInstance(null); // Clear instance on error
     } finally {
       setLoading(false);
     }
@@ -185,50 +165,114 @@ export default function N8nDiscovery() {
           </svg>
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Connect N8n Instance</h3>
-          <p className="text-gray-700">Discover and register n8n workflows as AI agents</p>
+          <h3 className="text-xl font-bold text-gray-900">Create N8n Agent</h3>
+          <p className="text-gray-700">Connect your n8n webhook to create an AI agent</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            N8n Instance URL
-          </label>
-          <input
-            type="url"
-            value={instanceUrl}
-            onChange={(e) => setInstanceUrl(e.target.value)}
-            placeholder="https://your-n8n-instance.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            API Key
-          </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Your n8n API key"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-          />
-        </div>
-      </div>
-
+      {/* Mode Toggle */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-800 mb-2">
-          Instance Name (Optional)
-        </label>
-        <input
-          type="text"
-          value={instanceName}
-          onChange={(e) => setInstanceName(e.target.value)}
-          placeholder="My N8n Instance"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-        />
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => setMode("webhook")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              mode === "webhook" 
+                ? "bg-white text-gray-900 shadow-sm" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Quick Setup (Webhook)
+          </button>
+          <button
+            onClick={() => setMode("api")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              mode === "api" 
+                ? "bg-white text-gray-900 shadow-sm" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Advanced (API Key)
+          </button>
+        </div>
       </div>
+
+      {/* Webhook Mode */}
+      {mode === "webhook" && (
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Webhook URL *
+            </label>
+            <input
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://your-n8n-instance.com/webhook/abc123"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Get this from your n8n workflow&apos;s webhook node
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Agent Name *
+            </label>
+            <input
+              type="text"
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+              placeholder="My N8n Agent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* API Mode */}
+      {mode === "api" && (
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Webhook URL *
+            </label>
+            <input
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://your-n8n-instance.com/webhook/abc123"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              API Key *
+            </label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Your n8n API key"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Find this in Settings → API Keys in your n8n instance
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Instance Name (Optional)
+            </label>
+            <input
+              type="text"
+              value={instanceName}
+              onChange={(e) => setInstanceName(e.target.value)}
+              placeholder="My N8n Instance"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            />
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -237,30 +281,46 @@ export default function N8nDiscovery() {
       )}
 
       <div className="flex space-x-3">
-        <button
-          onClick={testConnection}
-          disabled={loading}
-          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
-        >
-          {loading ? "Testing..." : "Test API Connection"}
-        </button>
-        
-        <button
-          onClick={testWebhookConnection}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          {loading ? "Testing..." : "Test Webhook"}
-        </button>
-        
-        {instance && (
-          <button
-            onClick={discoverWorkflows}
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Discovering..." : `Register ${instance.activeWorkflows} Workflows`}
-          </button>
+        {mode === "webhook" ? (
+          <>
+            <button
+              onClick={testWebhook}
+              disabled={loading || !webhookUrl || !agentName}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Testing..." : "Test Webhook"}
+            </button>
+            
+            {instance && (
+              <button
+                onClick={registerAgent}
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? "Creating..." : "Create Agent"}
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <button
+              onClick={testApiConnection}
+              disabled={loading || !webhookUrl || !apiKey}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Testing..." : "Test API Connection"}
+            </button>
+            
+            {instance && (
+              <button
+                onClick={registerAgent}
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? "Creating..." : `Register ${instance.activeWorkflows} Workflows`}
+              </button>
+            )}
+          </>
         )}
       </div>
 
