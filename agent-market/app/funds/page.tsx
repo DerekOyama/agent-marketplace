@@ -12,6 +12,23 @@ function FundsPageContent() {
     const paymentStatus = useMemo(() => searchParams.get("payment"), [searchParams]);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [testUrl, setTestUrl] = useState("/api/credits");
+    const [testResult, setTestResult] = useState<string>("");
+    const [testing, setTesting] = useState(false);
+
+    const runGetTest = async () => {
+        setTesting(true);
+        setTestResult("");
+        try {
+            const res = await fetch(testUrl, { method: "GET" });
+            const text = await res.text();
+            setTestResult(`Status: ${res.status}\n${text}`);
+        } catch (err) {
+            setTestResult(`Error: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            setTesting(false);
+        }
+    };
 
     // When returning from Stripe success, trigger confirm endpoint and poll briefly
     useEffect(() => {
@@ -66,6 +83,28 @@ function FundsPageContent() {
 					<p className="text-lg text-gray-800 mb-6">
 						Add money to your account balance to pay for agent executions.
 					</p>
+                {/* Temporary GET test tool */}
+                <div className="max-w-3xl mx-auto mb-6 bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                        <input
+                            type="text"
+                            value={testUrl}
+                            onChange={(e) => setTestUrl(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+                            placeholder="Enter GET URL (e.g. /api/credits)"
+                        />
+                        <button
+                            onClick={runGetTest}
+                            disabled={testing}
+                            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium"
+                        >
+                            {testing ? "Testing..." : "Run GET"}
+                        </button>
+                    </div>
+                    {testResult && (
+                        <pre className="mt-3 p-3 bg-gray-900 text-green-300 rounded-md text-sm overflow-x-auto whitespace-pre-wrap">{testResult}</pre>
+                    )}
+                </div>
                     {showSuccess && (
                         <div className="max-w-3xl mx-auto mb-4">
                             <div className="p-3 rounded-lg bg-green-100 text-green-800 border border-green-200">
