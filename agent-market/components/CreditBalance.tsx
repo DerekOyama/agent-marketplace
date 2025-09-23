@@ -27,17 +27,52 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
       const res = await fetch("/api/credits");
       const data = await res.json();
       
-      if (res.ok && data.user) {
+      if (res.status === 401) {
+        // Not signed in; show default $0 without error
+        setUser(null);
+        try { localStorage.setItem("walletBalanceCents", String(0)); } catch {}
+      } else if (res.ok && data.user) {
         setUser(data.user);
         onBalanceUpdate?.(data.user.creditBalanceCents);
         try { localStorage.setItem("walletBalanceCents", String(data.user.creditBalanceCents)); } catch {}
       } else {
-        setError(data.message || "Failed to fetch balance");
+        // For any other error, keep cached value if present and avoid noisy UI
+        const cached = typeof window !== 'undefined' ? localStorage.getItem("walletBalanceCents") : null;
+        if (cached !== null) {
+          const cents = parseInt(cached, 10);
+          if (!Number.isNaN(cents)) {
+            setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
+              id: "cached",
+              email: "",
+              creditBalanceCents: cents,
+              updatedAt: new Date().toISOString()
+            });
+          }
+        } else {
+          setUser(null);
+        }
+        setError(null);
         console.error("Credits API error:", data);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Network error";
-      setError(errorMessage);
+      // Network error: fall back to cache if present; otherwise default $0 without error
+      try {
+        const cached = localStorage.getItem("walletBalanceCents");
+        if (cached !== null) {
+          const cents = parseInt(cached, 10);
+          if (!Number.isNaN(cents)) {
+            setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
+              id: "cached",
+              email: "",
+              creditBalanceCents: cents,
+              updatedAt: new Date().toISOString()
+            });
+          }
+        } else {
+          setUser(null);
+        }
+      } catch {}
+      setError(null);
       console.error("Credits fetch error:", err);
     } finally {
       setLoading(false);
