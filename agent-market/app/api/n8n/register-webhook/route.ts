@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    const { webhookUrl, name, inputRequirements, pricePerExecutionCents } = await req.json();
+    const { webhookUrl, name, inputRequirements, pricePerExecutionCents, exampleInput, exampleOutput } = await req.json();
 
     console.log('Registering webhook as agent:', { webhookUrl, name, inputRequirements, pricePerExecutionCents });
 
@@ -40,6 +40,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!exampleInput || !exampleInput.trim()) {
+      return NextResponse.json(
+        { error: "Example input is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!exampleOutput || !exampleOutput.trim()) {
+      return NextResponse.json(
+        { error: "Example output is required" },
+        { status: 400 }
+      );
+    }
+
     // Create a new agent based on the webhook
     const agent = await prisma.agent.create({
       data: {
@@ -57,6 +71,8 @@ export async function POST(req: NextRequest) {
         ownerId: userId,
         inputRequirements: inputRequirements.trim(),
         pricePerExecutionCents: pricePerExecutionCents,
+        exampleInput: exampleInput.trim(),
+        exampleOutput: exampleOutput.trim(),
         metadata: {
           category: "n8n-webhook",
           tags: ["webhook", "n8n"],

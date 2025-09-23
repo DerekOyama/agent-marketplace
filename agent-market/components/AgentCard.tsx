@@ -19,6 +19,10 @@ interface Agent {
   stats?: Record<string, unknown>;
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
+  inputRequirements?: string;
+  pricePerExecutionCents?: number;
+  exampleInput?: string;
+  exampleOutput?: string;
 }
 
 interface AgentCardProps {
@@ -96,7 +100,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
 
   // Get stats from agent data or use defaults
   const agentStats = agent.stats || {};
-  const agentPricing = agent.pricing || {};
   
   // Calculate dynamic stats from agent data
   const totalExecutions = Number(agentStats.totalExecutions) || 0;
@@ -113,7 +116,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const repeatClientRate = uniqueUsers > 0 ? Math.min(Math.round((repeatUsers / uniqueUsers) * 100), 100) : 0;
   
   const stats = isN8nAgent ? {
-    price: agentPricing.pricePerExecution ? `$${agentPricing.pricePerExecution} per execution` : "Free",
+    price: agent.pricePerExecutionCents ? `$${(agent.pricePerExecutionCents / 100).toFixed(2)} per execution` : "Free",
     successRate: `${successRate}%`,
     avgDuration: agentStats.averageExecutionTime ? `${Math.round(Number(agentStats.averageExecutionTime))}ms` : "0ms",
     jobsCompleted: totalExecutions.toString(),

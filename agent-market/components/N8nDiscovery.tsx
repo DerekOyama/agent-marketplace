@@ -29,7 +29,6 @@ export default function N8nDiscovery() {
   const [instance, setInstance] = useState<N8nInstance | null>(null);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"webhook" | "api">("webhook");
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const testWebhook = async () => {
     if (!webhookUrl) {
@@ -126,7 +125,7 @@ export default function N8nDiscovery() {
   };
 
 
-  const registerAgent = async () => {
+  const proceedToVerification = () => {
     if (!webhookUrl) {
       setError("Please enter a webhook URL");
       return;
@@ -147,45 +146,22 @@ export default function N8nDiscovery() {
       return;
     }
 
-    setLoading(true);
-    setError("");
+    // Store agent data in sessionStorage for verification page
+    const agentData = {
+      webhookUrl,
+      name: agentName.trim(),
+      inputRequirements: inputRequirements.trim(),
+      pricePerExecutionCents: Math.round(Number(pricePerExecution) * 100),
+      apiKey: mode === "api" ? apiKey : null,
+      instanceName: mode === "api" ? instanceName : null,
+    };
 
     try {
-      const response = await fetch("/api/n8n/register-webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          webhookUrl,
-          name: agentName.trim(),
-          inputRequirements: inputRequirements.trim(),
-          pricePerExecutionCents: Math.round(Number(pricePerExecution) * 100), // Convert to cents
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setShowSuccess(true);
-        setInstance(null); // Clear the instance to reset the form
-        // Reset form
-        setWebhookUrl("");
-        setAgentName("");
-        setInputRequirements("");
-        setPricePerExecution("");
-        setApiKey("");
-        setInstanceName("");
-        
-        // Hide success animation after 3 seconds
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 3000);
-      } else {
-        setError(data.error || "Failed to register webhook as agent");
-      }
-    } catch (err) {
-      setError("Network error: " + (err instanceof Error ? err.message : "Unknown error"));
-    } finally {
-      setLoading(false);
+      sessionStorage.setItem("pendingAgentVerification", JSON.stringify(agentData));
+      // Redirect to verification page
+      window.location.href = "/n8n/verify";
+    } catch {
+      setError("Failed to save agent data. Please try again.");
     }
   };
 
@@ -227,33 +203,7 @@ export default function N8nDiscovery() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6 relative">
-      {/* Success Confetti Animation */}
-      {showSuccess && (
-        <div className="absolute inset-0 bg-green-50 bg-opacity-95 rounded-xl flex items-center justify-center z-10">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-green-900 mb-2">Agent Created Successfully!</h3>
-            <p className="text-green-700">Your n8n agent is now live in the marketplace</p>
-            <div className="mt-4 flex justify-center space-x-2">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 bg-green-400 rounded-full animate-ping"
-                  style={{
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: '1s'
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="bg-white rounded-xl shadow-lg border border-amber-200 p-6 mb-6">
 
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -462,15 +412,13 @@ export default function N8nDiscovery() {
               {loading ? "Testing..." : "Test Webhook"}
             </button>
             
-            {instance && (
-              <button
-                onClick={registerAgent}
-                disabled={loading || !inputRequirements.trim() || !pricePerExecution}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Creating..." : "Create Agent"}
-              </button>
-            )}
+            <button
+              onClick={proceedToVerification}
+              disabled={loading || !webhookUrl || !agentName.trim() || !inputRequirements.trim() || !pricePerExecution}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Processing..." : "Verify & Create Agent"}
+            </button>
           </>
         ) : (
           <>
@@ -482,15 +430,13 @@ export default function N8nDiscovery() {
               {loading ? "Testing..." : "Test API Connection"}
             </button>
             
-            {instance && (
-              <button
-                onClick={registerAgent}
-                disabled={loading || !inputRequirements.trim() || !pricePerExecution}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Creating..." : `Register ${instance.activeWorkflows} Workflows`}
-              </button>
-            )}
+            <button
+              onClick={proceedToVerification}
+              disabled={loading || !webhookUrl || !agentName.trim() || !inputRequirements.trim() || !pricePerExecution}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Processing..." : "Verify & Create Agent"}
+            </button>
           </>
         )}
       </div>

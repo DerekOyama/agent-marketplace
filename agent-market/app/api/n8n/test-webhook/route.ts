@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Request body:', body);
     
-    const { webhookUrl } = body;
+    const { webhookUrl, testData } = body;
 
     if (!webhookUrl) {
       console.log('No webhook URL provided');
@@ -17,6 +17,18 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('Testing webhook:', webhookUrl);
+    console.log('Test data:', testData);
+
+    // Prepare the test payload
+    const testPayload = testData ? {
+      ...testData,
+      source: "agent-marketplace",
+      timestamp: new Date().toISOString()
+    } : {
+      test: true,
+      source: "agent-marketplace",
+      timestamp: new Date().toISOString()
+    };
 
     // Test the webhook from the server side to avoid CORS issues
     const response = await fetch(webhookUrl, {
@@ -25,11 +37,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         "User-Agent": "n8n-agent-marketplace/1.0"
       },
-      body: JSON.stringify({ 
-        test: true,
-        source: "agent-marketplace",
-        timestamp: new Date().toISOString()
-      }),
+      body: JSON.stringify(testPayload),
     });
 
     console.log('Webhook response status:', response.status);
@@ -39,11 +47,19 @@ export async function POST(req: NextRequest) {
       const responseData = await response.text();
       console.log('Webhook response data:', responseData);
       
+      // Try to parse as JSON, fallback to text
+      let output;
+      try {
+        output = JSON.parse(responseData);
+      } catch {
+        output = responseData;
+      }
+      
       return NextResponse.json({
         success: true,
         status: response.status,
         statusText: response.statusText,
-        data: responseData,
+        output: output,
         message: "Webhook test successful"
       });
     } else {

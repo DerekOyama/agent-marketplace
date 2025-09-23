@@ -52,6 +52,8 @@ model Agent {
   outputSchema     Json?
   inputRequirements String?               // Human-readable input description for LLM
   pricePerExecutionCents Int?             // Price in cents per execution
+  exampleInput String?                    // Example input for testing and display
+  exampleOutput String?                   // Example output for display
   executions       AgentExecution[]
   logs             AgentLog[]
   metrics          AgentMetrics[]
