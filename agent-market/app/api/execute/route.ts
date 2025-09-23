@@ -75,14 +75,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Log the execution
+    const executionId = `exec_${Date.now()}`;
     await prisma.agentExecution.create({
       data: {
         agentId: agent.id,
         userId: userId,
-        executionId: `exec_${Date.now()}`,
+        executionId: executionId,
         status: "success",
         duration: 100,
-        creditsConsumed: executionCostCents
+        creditsConsumed: executionCostCents,
+        inputData: data,
+        outputData: result
       }
     });
 

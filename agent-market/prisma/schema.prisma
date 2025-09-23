@@ -126,6 +126,8 @@ model AgentExecution {
   sessionId       String?
   userAgent       String?
   ipAddress       String?
+  inputData       Json?
+  outputData      Json?
   startedAt       DateTime  @default(now())
   completedAt     DateTime?
   createdAt       DateTime  @default(now())

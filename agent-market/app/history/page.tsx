@@ -151,18 +151,18 @@ export default function HistoryPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Input</h4>
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Input</h4>
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <pre className="text-sm text-gray-900 whitespace-pre-wrap">
-                          {JSON.stringify(execution.inputData, null, 2)}
+                        <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                          {execution.inputData ? JSON.stringify(execution.inputData, null, 2) : 'No input data'}
                         </pre>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Output</h4>
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Output</h4>
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <pre className="text-sm text-gray-900 whitespace-pre-wrap">
-                          {JSON.stringify(execution.outputData, null, 2)}
+                        <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                          {execution.outputData ? JSON.stringify(execution.outputData, null, 2) : 'No output data'}
                         </pre>
                       </div>
                     </div>

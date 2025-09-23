@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AgentRequirementsModal from "./AgentRequirementsModal";
 
 interface Agent {
@@ -35,6 +36,7 @@ interface AgentCardProps {
 }
 
 export default function AgentCard({ agent, onAction, loading, log, debugEnabled = false }: AgentCardProps) {
+  const router = useRouter();
   const [localLog, setLocalLog] = useState<string>("");
   const [showRequirements, setShowRequirements] = useState(false);
   const [showHideConfirm, setShowHideConfirm] = useState(false);
@@ -42,9 +44,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [showPriceEdit, setShowPriceEdit] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   const [newPrice, setNewPrice] = useState<string>(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
-  const [showExecutionModal, setShowExecutionModal] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [executionInput, setExecutionInput] = useState<string>("");
 
   const handleAction = async (action: string) => {
     setLocalLog("");
@@ -95,51 +94,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
     }
   };
 
-  const handleExecuteAgent = async () => {
-    if (!executionInput.trim()) {
-      alert('Please provide input for the agent');
-      return;
-    }
-
-    setIsExecuting(true);
-    try {
-      const response = await fetch('/api/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agentId: agent.id,
-          data: { text: executionInput.trim() }
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Success - close modal and refresh
-        setShowExecutionModal(false);
-        setExecutionInput("");
-        await onAction('refresh-agent', agent.id);
-        // Show success message with link to history
-        const viewHistory = confirm('Agent executed successfully! Would you like to view your execution history?');
-        if (viewHistory) {
-          window.open('/history', '_blank');
-        }
-      } else {
-        // Handle different error types
-        if (result.error === 'insufficient_credits') {
-          alert(`Insufficient credits. Required: $${(result.requiredCredits / 100).toFixed(2)}, Available: $${(result.availableCredits / 100).toFixed(2)}`);
-        } else {
-          alert(`Execution failed: ${result.message || result.error || 'Unknown error'}`);
-        }
-      }
-    } catch (error) {
-      alert(`Error executing agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsExecuting(false);
-    }
-  };
 
   const isN8nAgent = agent.type === 'n8n';
   
@@ -348,7 +302,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                   } else if (action.action === 'edit-price') {
                     setShowPriceEdit(true);
                   } else if (action.action === 'execute') {
-                    setShowExecutionModal(true);
+                    router.push(`/execute/${agent.id}`);
                   } else {
                     handleAction(action.action);
                   }
@@ -472,67 +426,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         </div>
       )}
 
-      {/* Execution Modal */}
-      {showExecutionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Execute Agent
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Provide input for &quot;{agent.name}&quot;
-            </p>
-            
-            {/* Price Display */}
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-900">Execution Cost:</span>
-                <span className="text-lg font-bold text-blue-900">
-                  ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Input Text
-              </label>
-              <textarea
-                value={executionInput}
-                onChange={(e) => setExecutionInput(e.target.value)}
-                placeholder={agent.exampleInput || "Enter your input text here..."}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-              {agent.exampleInput && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Example: {agent.exampleInput}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowExecutionModal(false);
-                  setExecutionInput("");
-                }}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={isExecuting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExecuteAgent}
-                disabled={isExecuting || !executionInput.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isExecuting ? 'Executing...' : `Execute ($${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
