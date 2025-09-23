@@ -3,6 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { StandardAgentInput, StandardAgentOutput } from "../../../../types/agent-schemas";
 import { MetricsCollector } from "../../../../lib/metrics-collector";
 import { DataSanitizer } from "../../../../lib/data-sanitizer";
+import { CreditManager } from "../../../../lib/credit-manager";
 
 export async function POST(req: NextRequest) {
   const metricsCollector = new MetricsCollector();
@@ -29,31 +30,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Check and deduct credits before execution
-    let user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!user) {
-      // Create demo user if it doesn't exist
-      user = await prisma.user.create({
-        data: {
-          id: userId,
-          email: "demo@example.com",
-          creditBalanceCents: 1000 // $10.00
-        }
-      });
-    }
-
     const executionCostCents = 50; // $0.50 per execution
-    if (user.creditBalanceCents < executionCostCents) {
+    
+    // Check if user has sufficient credits
+    const creditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
+    
+    if (!creditCheck.sufficient) {
       return NextResponse.json(
         { 
           error: "insufficient_credits", 
-          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(user.creditBalanceCents / 100).toFixed(2)}`,
+          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(creditCheck.currentBalance / 100).toFixed(2)}`,
           requiredCredits: executionCostCents,
-          availableCredits: user.creditBalanceCents
+          availableCredits: creditCheck.currentBalance,
+          agentId
         },
-        { status: 400 }
+        { status: 402 }
       );
     }
 
@@ -224,7 +215,7 @@ export async function POST(req: NextRequest) {
         },
         usage: {
           creditsConsumed: 0, // No credits consumed on failure
-          remainingCredits: user.creditBalanceCents,
+          remainingCredits: 0, // Will be updated after user lookup
           executionCostCents: executionCostCents
         }
       };
@@ -336,7 +327,7 @@ export async function POST(req: NextRequest) {
 
     // Calculate actual credits consumed and get final balance
     let actualCreditsConsumed = 0;
-    let finalBalance = user.creditBalanceCents;
+    let finalBalance = creditCheck.currentBalance;
 
     // Use already calculated execution time
 
@@ -344,20 +335,24 @@ export async function POST(req: NextRequest) {
     if (response.ok) {
       actualCreditsConsumed = executionCostCents;
       
-      // Get current balance before deduction to avoid race conditions
-      const currentUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { creditBalanceCents: true }
+      // Deduct credits using CreditManager
+      const creditResult = await CreditManager.deductCredits({
+        userId,
+        amountCents: executionCostCents,
+        type: 'usage',
+        description: `Agent execution: ${agent?.name || agentId}`,
+        referenceId: executionId,
+        referenceType: 'execution',
+        metadata: {
+          agentId,
+          executionTime,
+          httpStatus: response.status,
+          sessionId
+        }
       });
       
-      if (currentUser) {
-        finalBalance = currentUser.creditBalanceCents - executionCostCents;
-        await prisma.user.update({
-          where: { id: userId },
-          data: { 
-            creditBalanceCents: finalBalance
-          }
-        });
+      if (creditResult.success && creditResult.newBalance !== undefined) {
+        finalBalance = creditResult.newBalance;
       }
 
       // Record successful execution metrics
@@ -402,7 +397,7 @@ export async function POST(req: NextRequest) {
         where: { id: userId },
         select: { creditBalanceCents: true }
       });
-      finalBalance = currentUser?.creditBalanceCents || user.creditBalanceCents;
+      finalBalance = currentUser?.creditBalanceCents || 0;
 
       // Record failed execution metrics
       const errorCode = response.status >= 500 ? 'SERVER_ERROR' : 

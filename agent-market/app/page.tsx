@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
+import CreditPurchase from "../components/CreditPurchase";
+import CreditHistory from "../components/CreditHistory";
+import StripePaymentTest from "../components/StripePaymentTest";
 import Link from "next/link";
 
 interface Agent {
@@ -30,6 +33,9 @@ export default function Home() {
   const [, setCreditBalance] = useState<number>(0);
   const [creditRefreshTrigger, setCreditRefreshTrigger] = useState<number>(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
+  const [showStripeTest, setShowStripeTest] = useState(false);
+  const [showCreditPurchase, setShowCreditPurchase] = useState(false);
+  const [showCreditHistory, setShowCreditHistory] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
@@ -77,6 +83,17 @@ export default function Home() {
 
   useEffect(() => {
     fetchAgents();
+    
+    // Listen for messages from credit purchase popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'CREDIT_PURCHASE_COMPLETE') {
+        console.log('Credit purchase completed, refreshing balance and history');
+        setCreditRefreshTrigger(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
 
   // Real-time metrics refresh every 30 seconds
@@ -163,6 +180,28 @@ export default function Home() {
               output: { ok: true },
             });
           }
+          break;
+        case "stripe-test-payment":
+          await post("/api/stripe/test-payment", { 
+            amountCents: 1000, 
+            currency: "usd",
+            description: "Test payment for Agent Marketplace"
+          });
+          break;
+        case "stripe-test-webhook":
+          await post("/api/stripe/test-webhook");
+          break;
+        case "stripe-checkout":
+          await post("/api/stripe/checkout-session", { 
+            amountCents: 2000, 
+            currency: "usd",
+            description: "Agent Marketplace Credits",
+            successUrl: "http://localhost:3000?payment=success",
+            cancelUrl: "http://localhost:3000?payment=cancelled"
+          });
+          break;
+        case "stripe-status":
+          await post("/api/stripe/status");
           break;
         case "execute":
           const executeResult = await post("/api/n8n/execute", { 
@@ -285,6 +324,24 @@ export default function Home() {
                 Connect N8n
               </Link>
               <button
+                onClick={() => setShowCreditPurchase(!showCreditPurchase)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+              >
+                {showCreditPurchase ? "Hide Purchase" : "Buy Credits"}
+              </button>
+              <button
+                onClick={() => setShowCreditHistory(!showCreditHistory)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+              >
+                {showCreditHistory ? "Hide History" : "Credit History"}
+              </button>
+              <button
+                onClick={() => setShowStripeTest(!showStripeTest)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+              >
+                {showStripeTest ? "Hide Stripe Test" : "Stripe Test"}
+              </button>
+              <button
                 onClick={() => setShowDebugMenu(!showDebugMenu)}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm"
               >
@@ -297,40 +354,104 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+        {/* Credit Purchase */}
+        {showCreditPurchase && (
+          <div className="mb-8">
+            <CreditPurchase 
+              onPurchaseComplete={() => setCreditRefreshTrigger(prev => prev + 1)}
+              onBalanceUpdate={() => setCreditRefreshTrigger(prev => prev + 1)}
+            />
+          </div>
+        )}
+
+        {/* Credit History */}
+        {showCreditHistory && (
+          <div className="mb-8">
+            <CreditHistory refreshTrigger={creditRefreshTrigger} />
+          </div>
+        )}
+
+        {/* Stripe Payment Test */}
+        {showStripeTest && (
+          <div className="mb-8">
+            <StripePaymentTest />
+          </div>
+        )}
+
         {/* Debug Menu */}
         {showDebugMenu && (
           <div className="mb-8">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Debug Controls</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button
-                  onClick={() => handleAgentAction("seed", "")}
-                  disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                >
-                  {loading ? "Loading..." : "Seed Agent"}
-                </button>
-                <button
-                  onClick={() => handleAgentAction("credits", "")}
-                  disabled={loading}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                >
-                  Check Credits
-                </button>
-                <button
-                  onClick={() => handleAgentAction("mandate", "")}
-                  disabled={loading}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                >
-                  Create Mandate
-                </button>
-                <button
-                  onClick={() => fetchAgents()}
-                  disabled={loading}
-                  className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                >
-                  Refresh Agents
-                </button>
+              
+              {/* Basic Controls */}
+              <div className="mb-6">
+                <h4 className="text-md font-medium text-gray-700 mb-3">Basic Operations</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => handleAgentAction("seed", "")}
+                    disabled={loading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    {loading ? "Loading..." : "Seed Agent"}
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("credits", "")}
+                    disabled={loading}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Check Credits
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("mandate", "")}
+                    disabled={loading}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Create Mandate
+                  </button>
+                  <button
+                    onClick={() => fetchAgents()}
+                    disabled={loading}
+                    className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Refresh Agents
+                  </button>
+                </div>
+              </div>
+
+              {/* Stripe Payment Testing */}
+              <div>
+                <h4 className="text-md font-medium text-gray-700 mb-3">Stripe Payment Testing</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => handleAgentAction("stripe-status", "")}
+                    disabled={loading}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Stripe Status
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("stripe-test-payment", "")}
+                    disabled={loading}
+                    className="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Test Payment
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("stripe-test-webhook", "")}
+                    disabled={loading}
+                    className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Test Webhook
+                  </button>
+                  <button
+                    onClick={() => handleAgentAction("stripe-checkout", "")}
+                    disabled={loading}
+                    className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    Checkout Session
+                  </button>
+                </div>
               </div>
             </div>
           </div>

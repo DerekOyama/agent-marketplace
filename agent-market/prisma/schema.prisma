@@ -18,6 +18,8 @@ model User {
   mandates           Mandate[]
   transactions       Transaction[]
   agentInteractions  UserAgentInteraction[]
+  creditTransactions CreditTransaction[]
+  creditPurchases    CreditPurchase[]
 }
 
 model Agent {
@@ -322,4 +324,51 @@ model SystemMetrics {
   @@index([metric, timestamp])
   @@index([component, timestamp])
   @@index([timestamp])
+}
+
+// Credit Purchase - Tracks Stripe payments for credit top-ups
+model CreditPurchase {
+  id                String   @id @default(cuid())
+  userId            String
+  amountCents       Int      // Amount paid in cents
+  creditsPurchased  Int      // Number of credits added to account
+  currency          String   @default("usd")
+  stripePaymentIntentId String? // Stripe Payment Intent ID
+  stripeCheckoutSessionId String? // Stripe Checkout Session ID
+  status            String   @default("pending") // pending, completed, failed, refunded
+  metadata          Json?    // Additional purchase metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  completedAt       DateTime?
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditTransactions CreditTransaction[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([stripePaymentIntentId])
+  @@index([stripeCheckoutSessionId])
+}
+
+// Credit Transaction - Tracks all credit movements (purchases, usage, refunds)
+model CreditTransaction {
+  id                String   @id @default(cuid())
+  userId            String
+  amountCents       Int      // Positive for credits added, negative for credits used
+  type              String   // purchase, usage, refund, bonus, adjustment
+  description       String   // Human-readable description
+  referenceId       String?  // ID of related entity (agent execution, purchase, etc.)
+  referenceType     String?  // Type of reference (execution, purchase, etc.)
+  balanceBeforeCents Int     // User's balance before this transaction
+  balanceAfterCents  Int     // User's balance after this transaction
+  metadata          Json?    // Additional transaction metadata
+  createdAt         DateTime @default(now())
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditPurchaseId  String?
+  creditPurchase    CreditPurchase? @relation(fields: [creditPurchaseId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([referenceId, referenceType])
 }
