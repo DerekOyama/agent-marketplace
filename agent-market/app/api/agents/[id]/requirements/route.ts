@@ -29,6 +29,7 @@ export async function GET(
         outputSchema: true,
         metadata: true,
         pricing: true,
+        pricePerExecutionCents: true,
         stats: true,
         isActive: true,
         triggerType: true,
@@ -93,6 +94,7 @@ export async function GET(
         triggerType: agent.triggerType,
         isActive: agent.isActive,
         pricing: agent.pricing,
+        pricePerExecutionCents: agent.pricePerExecutionCents,
         stats: agent.stats,
       },
       input: {

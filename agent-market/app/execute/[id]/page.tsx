@@ -12,7 +12,8 @@ interface Agent {
   type: string;
   isActive: boolean;
   triggerType?: string;
-  pricing?: { pricePerExecutionCents?: number };
+  pricing?: Record<string, unknown>;
+  pricePerExecutionCents?: number;
   stats?: Record<string, unknown>;
 }
 
@@ -52,6 +53,41 @@ export default function ExecuteAgentPage() {
     ];
   };
 
+  const simplifyExampleInput = (example: unknown): string => {
+    // Extract the actual text message from nested JSON structures
+    if (typeof example === 'string') {
+      return `"${example}"`;
+    }
+    
+    if (example && typeof example === 'object') {
+      // Look for common text fields
+      const exampleObj = example as Record<string, unknown>;
+      if (exampleObj.text && typeof exampleObj.text === 'string') {
+        return `"${exampleObj.text}"`;
+      }
+      if (exampleObj.data && typeof exampleObj.data === 'object') {
+        const dataObj = exampleObj.data as Record<string, unknown>;
+        if (dataObj.text && typeof dataObj.text === 'string') {
+          return `"${dataObj.text}"`;
+        }
+        if (dataObj.data && typeof dataObj.data === 'object') {
+          const nestedDataObj = dataObj.data as Record<string, unknown>;
+          if (nestedDataObj.text && typeof nestedDataObj.text === 'string') {
+            return `"${nestedDataObj.text}"`;
+          }
+        }
+      }
+      if (exampleObj.message && typeof exampleObj.message === 'string') {
+        return `"${exampleObj.message}"`;
+      }
+      
+      // If no text field found, return a default message
+      return '"Hello from the agent marketplace!"';
+    }
+    
+    return '"Hello from the agent marketplace!"';
+  };
+
   const fetchAgent = useCallback(async () => {
     try {
       setLoading(true);
@@ -61,9 +97,9 @@ export default function ExecuteAgentPage() {
         const data = await response.json();
         setAgent(data.documentation.agent);
         
-        // Store example input
+        // Store simplified example input
         const example = data.documentation.input.example;
-        setExampleInput(JSON.stringify(example, null, 2));
+        setExampleInput(simplifyExampleInput(example));
         
         // Parse input requirements to create form fields
         const fields = parseInputRequirements(data.documentation.input.description);
@@ -246,14 +282,14 @@ export default function ExecuteAgentPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{agent.name}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{agent.description}</p>
+                  <p className="text-gray-800 text-sm mt-1">{agent.description}</p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Execution Cost:</span>
                     <span className="text-lg font-bold text-blue-600">
-                      ${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)}
+                      ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -291,7 +327,7 @@ export default function ExecuteAgentPage() {
                       </label>
                       
                       {field.description && (
-                        <p className="text-sm text-gray-600 mb-2">{field.description}</p>
+                        <p className="text-sm text-gray-800 mb-2">{field.description}</p>
                       )}
                       
                       {field.type === 'textarea' ? (
@@ -315,7 +351,7 @@ export default function ExecuteAgentPage() {
                       )}
                       
                       {field.example && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-700 mt-1">
                           Example: {field.example}
                         </p>
                       )}
@@ -324,8 +360,8 @@ export default function ExecuteAgentPage() {
                 </div>
 
                 <div className="mt-8 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    You will be charged ${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
+                  <div className="text-sm text-gray-700">
+                    You will be charged ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
                   </div>
                   
                   <button
@@ -333,7 +369,7 @@ export default function ExecuteAgentPage() {
                     disabled={executing}
                     className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
-                    {executing ? 'Executing...' : `Execute Agent ($${((agent.pricing?.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
+                    {executing ? 'Executing...' : `Execute Agent ($${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)})`}
                   </button>
                 </div>
               </form>
