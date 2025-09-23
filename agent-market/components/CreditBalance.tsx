@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 interface User {
   id: string;
@@ -176,43 +176,60 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
   }
 
   return (
-    <div className={`flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${isUpdating ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}>
-      <button
-        onClick={() => {
-          if (status !== "authenticated") {
-            signIn("google");
-          } else {
-            window.location.href = '/funds';
-          }
-        }}
-        title="View wallet / Add funds"
-        className="flex items-center space-x-1 group"
-      >
-        <svg className="w-4 h-4 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-        </svg>
-        <span className="text-sm font-medium text-gray-800">Wallet:</span>
-        <span className={`text-sm font-bold transition-colors duration-300 ${getBalanceColor(user?.creditBalanceCents || 0)} ${isUpdating ? 'animate-pulse' : ''}`}>
-          {user ? formatBalance(user.creditBalanceCents) : "$0.00"}
-        </span>
-        <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
+    <div className="flex items-center space-x-3">
+      {/* Wallet Button */}
+      <div className={`flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${isUpdating ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}>
+        <button
+          onClick={() => {
+            if (status !== "authenticated") {
+              signIn("google");
+            } else {
+              window.location.href = '/funds';
+            }
+          }}
+          title="View wallet / Add funds"
+          className="flex items-center space-x-1 group"
+        >
+          <svg className="w-4 h-4 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+          <span className="text-sm font-medium text-gray-800">Wallet:</span>
+          <span className={`text-sm font-bold transition-colors duration-300 ${getBalanceColor(user?.creditBalanceCents || 0)} ${isUpdating ? 'animate-pulse' : ''}`}>
+            {user ? formatBalance(user.creditBalanceCents) : "$0.00"}
+          </span>
+          <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
 
-      {isUpdating && (
-        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        {isUpdating && (
+          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        )}
+
+        <button
+          onClick={fetchBalance}
+          className="text-xs text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
+          title="Refresh balance"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Sign Out Button - Only show when authenticated */}
+      {status === "authenticated" && (
+        <button
+          onClick={() => signOut()}
+          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm border border-gray-300 transition-all duration-300 group"
+          title="Sign out"
+        >
+          <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Sign Out</span>
+        </button>
       )}
-
-      <button
-        onClick={fetchBalance}
-        className="text-xs text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
-        title="Refresh balance"
-      >
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
     </div>
   );
 }
