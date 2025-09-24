@@ -73,7 +73,7 @@ export class PayoutManager {
       // Calculate revenue split
       const { platformFeeCents, creatorEarningsCents } = this.calculateRevenueSplit(executionCostCents);
 
-      // Upsert agent earnings record
+      // Upsert agent earnings record for the agent owner (not the execution user)
       const earnings = await prisma.agentEarnings.upsert({
         where: {
           agentId_userId: {
@@ -95,7 +95,7 @@ export class PayoutManager {
         },
         create: {
           agentId,
-          userId: agent.ownerId,
+          userId: agent.ownerId, // This is the agent owner, not the execution user
           totalEarningsCents: creatorEarningsCents,
           pendingEarningsCents: creatorEarningsCents,
           totalExecutions: 1,

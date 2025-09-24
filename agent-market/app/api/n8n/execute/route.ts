@@ -34,10 +34,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // We'll check credits after getting the agent's actual price
-    let executionCostCents = 50; // Default to $0.50 if no price set
-
-    // Get the agent from database
+    // Get the agent from database first to get actual price
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       select: {
@@ -65,24 +62,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update execution cost to use agent's actual price
-    executionCostCents = agent.pricePerExecutionCents || 50;
+    // Get actual execution cost from agent's price setting
+    const executionCostCents = agent.pricePerExecutionCents || 50; // Default to $0.50 if no price set
     console.log('Agent execution cost:', {
       agentName: agent.name,
       pricePerExecutionCents: agent.pricePerExecutionCents,
       executionCostCents: executionCostCents
     });
     
-    // Re-check credits with actual agent price
-    const finalCreditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
+    // Check credits BEFORE execution with actual agent price
+    const creditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
     
-    if (!finalCreditCheck.sufficient) {
+    if (!creditCheck.sufficient) {
       return NextResponse.json(
         { 
           error: "insufficient_credits", 
-          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(finalCreditCheck.currentBalance / 100).toFixed(2)}`,
+          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(creditCheck.currentBalance / 100).toFixed(2)}`,
           requiredCredits: executionCostCents,
-          availableCredits: finalCreditCheck.currentBalance,
+          availableCredits: creditCheck.currentBalance,
           agentId
         },
         { status: 402 }
@@ -349,9 +346,8 @@ export async function POST(req: NextRequest) {
 
     // Calculate actual credits consumed and get final balance
     let actualCreditsConsumed = 0;
-    let finalBalance = finalCreditCheck.currentBalance;
-
-    // Use already calculated execution time
+    let finalBalance = creditCheck.currentBalance;
+    let balanceBeforeCents = creditCheck.currentBalance;
 
     // Deduct credits only on successful execution
     if (response.ok) {
@@ -386,9 +382,18 @@ export async function POST(req: NextRequest) {
         console.log('Credits deducted successfully, new balance:', finalBalance);
       } else {
         console.error('Credit deduction failed:', creditResult.error);
+        // If credit deduction fails, we should not proceed with execution
+        return NextResponse.json({
+          success: false,
+          error: {
+            code: "CREDIT_DEDUCTION_FAILED",
+            message: "Failed to deduct credits for execution",
+            details: { creditError: creditResult.error }
+          }
+        }, { status: 500 });
       }
 
-      // Record successful execution metrics
+      // Record successful execution metrics with balance information
       await metricsCollector.recordExecution({
         agentId,
         userId,
@@ -405,7 +410,9 @@ export async function POST(req: NextRequest) {
         processingTime: executionTime,
         sessionId: dataSanitizer.sanitizeSessionId(sessionId),
         userAgent: dataSanitizer.sanitizeUserAgent(userAgent),
-        ipAddress: dataSanitizer.anonymizeIP(clientIP)
+        ipAddress: dataSanitizer.anonymizeIP(clientIP),
+        balanceBeforeCents,
+        balanceAfterCents: finalBalance
       });
 
       // Log execution success
@@ -449,6 +456,7 @@ export async function POST(req: NextRequest) {
         select: { creditBalanceCents: true }
       });
       finalBalance = currentUser?.creditBalanceCents || 0;
+      balanceBeforeCents = finalBalance; // No change in balance for failed executions
 
       // Record failed execution metrics
       const errorCode = response.status >= 500 ? 'SERVER_ERROR' : 
@@ -470,7 +478,9 @@ export async function POST(req: NextRequest) {
         responseTime: executionTime,
         sessionId: dataSanitizer.sanitizeSessionId(sessionId),
         userAgent: dataSanitizer.sanitizeUserAgent(userAgent),
-        ipAddress: dataSanitizer.anonymizeIP(clientIP)
+        ipAddress: dataSanitizer.anonymizeIP(clientIP),
+        balanceBeforeCents,
+        balanceAfterCents: finalBalance
       });
 
       // Log execution failure

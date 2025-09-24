@@ -24,6 +24,8 @@ export interface ExecutionData {
   sessionId?: string;
   userAgent?: string;
   ipAddress?: string;
+  balanceBeforeCents?: number;
+  balanceAfterCents?: number;
 }
 
 export interface LogData {
@@ -82,6 +84,8 @@ export class MetricsCollector {
           sessionId: executionData.sessionId,
           userAgent: executionData.userAgent,
           ipAddress: anonymizedIP,
+          balanceBeforeCents: executionData.balanceBeforeCents,
+          balanceAfterCents: executionData.balanceAfterCents,
           completedAt: new Date()
         }
       });
@@ -90,7 +94,7 @@ export class MetricsCollector {
       await this.updateAgentStats(executionData.agentId);
 
       // Update metrics aggregation
-      await this.updateMetrics(executionData.agentId, executionData.status, executionData.duration);
+      await this.updateMetrics(executionData.agentId, executionData.status, executionData.duration, executionData);
 
       // Update user interaction
       await this.updateUserInteraction(executionData.userId, executionData.agentId, {
@@ -295,7 +299,7 @@ export class MetricsCollector {
   /**
    * Update metrics aggregation
    */
-  private async updateMetrics(agentId: string, status: string, duration: number): Promise<void> {
+  private async updateMetrics(agentId: string, status: string, duration: number, executionData?: ExecutionData): Promise<void> {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Start of day
@@ -329,8 +333,8 @@ export class MetricsCollector {
             avgDuration: this.calculateNewAverage(existingMetrics.avgDuration, duration, existingMetrics.totalExecutions),
             minDuration: existingMetrics.minDuration ? Math.min(existingMetrics.minDuration, duration) : duration,
             maxDuration: existingMetrics.maxDuration ? Math.max(existingMetrics.maxDuration, duration) : duration,
-            totalCreditsConsumed: { increment: 50 }, // Standard cost
-            avgCreditsPerExecution: existingMetrics.totalCreditsConsumed / (existingMetrics.totalExecutions + 1),
+            totalCreditsConsumed: { increment: executionData?.creditsConsumed || 0 },
+            avgCreditsPerExecution: (existingMetrics.totalCreditsConsumed + (executionData?.creditsConsumed || 0)) / (existingMetrics.totalExecutions + 1),
             errorCounts: isError ? this.updateErrorCounts(existingMetrics.errorCounts as Record<string, number> | null, status) : undefined,
             updatedAt: new Date()
           }
@@ -350,8 +354,8 @@ export class MetricsCollector {
             avgDuration: duration,
             minDuration: duration,
             maxDuration: duration,
-            totalCreditsConsumed: 50,
-            avgCreditsPerExecution: 50,
+            totalCreditsConsumed: executionData?.creditsConsumed || 0,
+            avgCreditsPerExecution: executionData?.creditsConsumed || 0,
             errorCounts: isError ? { [status.toUpperCase()]: 1 } : undefined
           }
         });
