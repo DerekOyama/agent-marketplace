@@ -40,16 +40,15 @@ export async function POST(
       }
     });
 
-    let ratingRecord;
     if (existingRating) {
       // Update existing rating
-      ratingRecord = await prisma.agentRating.update({
+      await prisma.agentRating.update({
         where: { id: existingRating.id },
         data: { rating: rating }
       });
     } else {
       // Create new rating
-      ratingRecord = await prisma.agentRating.create({
+      await prisma.agentRating.create({
         data: {
           agentId: agentId,
           userId: userId,

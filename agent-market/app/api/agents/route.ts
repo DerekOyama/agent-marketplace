@@ -23,8 +23,8 @@ export async function GET(req: Request) {
       id: string; name: string; description: string | null; runUrl: string; quoteUrl: string;
       token: string; type: string; n8nWorkflowId: string | null; n8nInstanceUrl: string | null;
       webhookUrl: string | null; triggerType: string | null; isActive: boolean;
-      isHidden: boolean; isDeleted: boolean; metadata: any; pricing: any;
-      inputSchema: any; outputSchema: any; createdAt: Date; updatedAt: Date;
+      isHidden: boolean; isDeleted: boolean; metadata: unknown; pricing: unknown;
+      inputSchema: unknown; outputSchema: unknown; createdAt: Date; updatedAt: Date;
       totalExecutions: number; avgRating: number | null; totalUsers: number | null;
       lastExecutedAt: Date | null;
     }>;
