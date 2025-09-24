@@ -71,6 +71,8 @@ export async function GET(req: Request) {
       pricing: agent.pricing,
       inputSchema: agent.inputSchema,
       outputSchema: agent.outputSchema,
+      pricePerExecutionCents: agent.pricePerExecutionCents,
+      ownerId: agent.ownerId,
       createdAt: agent.createdAt.toISOString(),
       updatedAt: agent.updatedAt.toISOString(),
       totalExecutions: mode === 'full' ? agent.totalExecutions : undefined,
@@ -80,10 +82,18 @@ export async function GET(req: Request) {
     }));
     
     console.log("Found agents:", agentsWithFields.length);
-    console.log("Agent details:", agentsWithFields.map(a => ({ id: a.id, name: a.name, isActive: a.isActive, isHidden: a.isHidden, isDeleted: a.isDeleted })));
+    console.log("Agent details:", agentsWithFields.map(a => ({ 
+      id: a.id, 
+      name: a.name, 
+      isActive: a.isActive, 
+      isHidden: a.isHidden, 
+      isDeleted: a.isDeleted,
+      pricePerExecutionCents: a.pricePerExecutionCents,
+      ownerId: a.ownerId
+    })));
     
     if (mode === 'light') {
-      return NextResponse.json({ agents: agentsWithFields }, { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } });
+      return NextResponse.json({ agents: agentsWithFields }, { status: 200, headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
     }
 
     // Batch fetch all stats in one query for better performance (full mode)
@@ -160,7 +170,7 @@ export async function GET(req: Request) {
       };
     });
     
-    return NextResponse.json({ agents: agentsWithStats }, { status: 200 });
+    return NextResponse.json({ agents: agentsWithStats }, { status: 200, headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
   } catch (e: unknown) {
     console.error("Database error:", e);
     return NextResponse.json({ 
