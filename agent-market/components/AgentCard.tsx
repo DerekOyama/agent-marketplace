@@ -333,7 +333,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
           {/* Agent Description */}
           {agent.description && (
             <div className="mb-3">
-              <p className="text-sm text-gray-600 line-clamp-2">{agent.description}</p>
+              <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">{agent.description}</p>
             </div>
           )}
         </div>

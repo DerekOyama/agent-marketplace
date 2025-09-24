@@ -50,31 +50,47 @@ export class N8nService {
         
         console.log('N8n API Request:', {
           url,
-          headers
+          method: options.method || 'GET',
+          hasApiKey: !!headers['X-N8N-API-KEY']
         });
         
         const response = await fetch(url, {
           ...options,
           headers,
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
 
         console.log('N8n API Response:', {
           status: response.status,
           statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
+          url: response.url
         });
 
         if (!response.ok) {
           const errorText = await response.text();
           console.error('N8n API Error Response:', errorText);
-          lastError = new Error(`N8n API error: ${response.status} ${response.statusText} - ${errorText}`);
+          lastError = new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
           continue; // Try next URL
         }
 
-        return response.json();
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.error(`Failed to connect to ${url}:`, error);
-        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            lastError = new Error('Request timeout - n8n instance may be slow or unreachable');
+          } else if (error.message.includes('fetch')) {
+            lastError = new Error(`Network error: ${error.message}`);
+          } else {
+            lastError = error;
+          }
+        } else {
+          lastError = new Error('Unknown network error');
+        }
+        
         continue; // Try next URL
       }
     }
@@ -85,9 +101,11 @@ export class N8nService {
   async getWorkflows(): Promise<N8nWorkflow[]> {
     try {
       const response = await this.makeRequest<{ data: N8nWorkflow[] }>('/workflows');
-      return response.data;
+      return response.data || [];
     } catch (error) {
       console.error('Failed to fetch workflows:', error);
+      
+      // Provide more specific error messages
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           throw new Error('Invalid API key. Please check your n8n API key and try again.');
@@ -97,8 +115,11 @@ export class N8nService {
           throw new Error('n8n instance not found. Please check the instance URL.');
         } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
           throw new Error('Cannot connect to n8n instance. Please check the instance URL and ensure it\'s running.');
+        } else if (error.message.includes('timeout')) {
+          throw new Error('Connection timeout. Please check your network connection and try again.');
         }
       }
+      
       throw new Error(`Failed to fetch n8n workflows: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -227,9 +248,15 @@ export class N8nService {
     const triggerType = triggerNode?.type === 'n8n-nodes-base.webhook' ? 'webhook' :
                        triggerNode?.type === 'n8n-nodes-base.scheduleTrigger' ? 'schedule' : 'manual';
 
+    // Generate a more descriptive description based on workflow nodes
+    const nodeTypes = workflow.nodes.map(node => node.type).filter(type => 
+      !type.includes('trigger') && !type.includes('webhook')
+    );
+    const description = this.generateWorkflowDescription(workflow, nodeTypes);
+
     return {
       name: workflow.name,
-      description: `N8n workflow: ${workflow.name}`,
+      description,
       n8nWorkflowId: workflow.id,
       n8nInstanceUrl: instanceUrl,
       webhookUrl: triggerType === 'webhook' ? `${instanceUrl}/webhook/${workflow.id}` : undefined,
@@ -241,6 +268,7 @@ export class N8nService {
         version: workflow.versionId || '1.0.0',
         author: 'n8n',
         documentation: `${instanceUrl}/workflow/${workflow.id}`,
+        nodeTypes: nodeTypes.slice(0, 5), // Limit to first 5 node types for metadata
       },
       pricing: {
         pricePerExecution: 0.01, // Default pricing
@@ -254,6 +282,29 @@ export class N8nService {
         averageExecutionTime: 0,
       },
     };
+  }
+
+  // Generate a more descriptive description for workflows
+  private generateWorkflowDescription(workflow: N8nWorkflow, nodeTypes: string[]): string {
+    const baseDescription = `N8n workflow: ${workflow.name}`;
+    
+    if (nodeTypes.length === 0) {
+      return baseDescription;
+    }
+
+    // Create a more informative description based on node types
+    const commonNodes = nodeTypes.slice(0, 3).map(type => {
+      const cleanType = type.replace('n8n-nodes-base.', '').replace('n8n-nodes-base.', '');
+      return cleanType.charAt(0).toUpperCase() + cleanType.slice(1);
+    });
+
+    if (commonNodes.length === 1) {
+      return `${workflow.name} - Automated ${commonNodes[0]} workflow`;
+    } else if (commonNodes.length === 2) {
+      return `${workflow.name} - ${commonNodes[0]} and ${commonNodes[1]} automation`;
+    } else {
+      return `${workflow.name} - Multi-step automation using ${commonNodes.join(', ')} and more`;
+    }
   }
 }
 

@@ -110,6 +110,7 @@ export interface N8nAgent {
     version?: string;
     author?: string;
     documentation?: string;
+    nodeTypes?: string[];
   };
   pricing: {
     pricePerExecution: number;

@@ -655,7 +655,9 @@ export default function ExecuteAgentPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{agent.name}</h3>
-                  <p className="text-gray-900 text-sm mt-1">{agent.description}</p>
+                  {agent.description && (
+                    <p className="text-gray-700 text-sm mt-2 leading-relaxed">{agent.description}</p>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
