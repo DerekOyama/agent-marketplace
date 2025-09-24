@@ -72,11 +72,12 @@ export default function Home() {
 
         // Background upgrade to full stats without blocking UI
         try {
-          const fullRes = await fetch(`/api/agents?mode=full${debugParam}`);
+          const fullRes = await fetch(`/api/agents?mode=full${debugParam}${deletedParam}`);
           if (fullRes.ok) {
             const fullText = await fullRes.text();
             const fullData = fullText ? JSON.parse(fullText) : {};
             if (fullData.agents) {
+              console.log("Setting full stats agents:", fullData.agents.map((a: Agent) => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
               setAgents(fullData.agents);
             }
           }
