@@ -58,6 +58,12 @@ const mockUsers: MockUser[] = [
     email: 'test@example.com',
     creditBalanceCents: 10000, // $100.00
     createdAt: new Date('2025-09-23T12:00:00Z')
+  },
+  {
+    id: 'derek-oyama',
+    email: 'derek.oyama@gmail.com',
+    creditBalanceCents: 800, // $8.00
+    createdAt: new Date('2025-09-23T08:00:00Z')
   }
 ];
 
@@ -78,6 +84,18 @@ const mockTransactions: Record<string, MockTransaction[]> = {
   ],
   'test-user': [
     { id: 'tx9', amountCents: 10000, type: 'purchase', description: 'Credit purchase - 10000 credits', balanceAfterCents: 10000, createdAt: new Date('2025-09-23T12:00:00Z') }
+  ],
+  'derek-oyama': [
+    { id: 'tx10', amountCents: -50, type: 'usage', description: 'Agent Execution: Bbb', balanceAfterCents: 800, createdAt: new Date('2025-09-23T13:25:00Z') },
+    { id: 'tx11', amountCents: -50, type: 'usage', description: 'Agent Execution: Bbb', balanceAfterCents: 850, createdAt: new Date('2025-09-23T13:11:00Z') },
+    { id: 'tx12', amountCents: -50, type: 'usage', description: 'Agent Execution: Aa', balanceAfterCents: 900, createdAt: new Date('2025-09-23T11:48:00Z') },
+    { id: 'tx13', amountCents: 1000, type: 'purchase', description: 'Credit Purchase - 1000 Credits', balanceAfterCents: 950, createdAt: new Date('2025-09-23T10:17:00Z') },
+    { id: 'tx14', amountCents: -50, type: 'usage', description: 'Agent Execution: Demo N8n Agent', balanceAfterCents: 950, createdAt: new Date('2025-09-23T10:07:00Z') },
+    { id: 'tx15', amountCents: -50, type: 'usage', description: 'Agent Execution: Test Agent', balanceAfterCents: 1000, createdAt: new Date('2025-09-23T09:30:00Z') },
+    { id: 'tx16', amountCents: -100, type: 'usage', description: 'Agent Execution: Advanced AI', balanceAfterCents: 1050, createdAt: new Date('2025-09-23T09:15:00Z') },
+    { id: 'tx17', amountCents: 2000, type: 'purchase', description: 'Credit Purchase - 2000 Credits', balanceAfterCents: 1150, createdAt: new Date('2025-09-23T08:45:00Z') },
+    { id: 'tx18', amountCents: -25, type: 'usage', description: 'Agent Execution: Quick Task', balanceAfterCents: 1150, createdAt: new Date('2025-09-23T08:30:00Z') },
+    { id: 'tx19', amountCents: 500, type: 'bonus', description: 'Welcome Bonus', balanceAfterCents: 1175, createdAt: new Date('2025-09-23T08:00:00Z') }
   ]
 };
 
@@ -105,7 +123,14 @@ const createMockPrisma = () => ({
   },
   creditTransaction: {
     findMany: async ({ where }: { where: WhereClause }) => {
-      const userId = where.userId;
+      let userId = where.userId;
+      
+      // If userId is not provided, try to find by email
+      if (!userId && where.email) {
+        const user = mockUsers.find(u => u.email === where.email);
+        userId = user?.id;
+      }
+      
       return mockTransactions[userId as string] || [];
     }
   },
