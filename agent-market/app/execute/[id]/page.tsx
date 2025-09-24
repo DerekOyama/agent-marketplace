@@ -19,6 +19,9 @@ interface Agent {
     avgRating?: number;
     lastExecutedAt?: string;
     successRate?: number;
+    uptime?: number;
+    avgExecutionTime?: number;
+    starRating?: number;
   };
 }
 
@@ -49,6 +52,9 @@ export default function ExecuteAgentPage() {
     output: { description: string; example: unknown };
     usage: { method: string; endpoint: string; headers: Record<string, string>; body: unknown };
   } | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -221,6 +227,42 @@ export default function ExecuteAgentPage() {
     }
   };
 
+  const handleRatingSubmit = async () => {
+    if (!agent || userRating === 0) return;
+
+    setIsSubmittingRating(true);
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/rate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating: userRating
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the agent stats with new rating
+        if (agent.stats) {
+          agent.stats.avgRating = result.newAvgRating;
+          agent.stats.starRating = result.newAvgRating;
+        }
+        setShowRatingModal(false);
+        setUserRating(0);
+        alert('Thank you for your rating!');
+      } else {
+        alert(`Failed to submit rating: ${result.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert(`Error submitting rating: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -312,23 +354,35 @@ export default function ExecuteAgentPage() {
                 {agent.stats && (
                   <div className="border-t border-gray-200 pt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Agent Metrics</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       {agent.stats.totalExecutions !== undefined && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{agent.stats.totalExecutions}</div>
+                          <div className="text-xl font-bold text-blue-600">{agent.stats.totalExecutions}</div>
                           <div className="text-xs text-gray-600">Total Executions</div>
                         </div>
                       )}
                       {agent.stats.avgRating !== undefined && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">{agent.stats.avgRating.toFixed(1)}</div>
+                          <div className="text-xl font-bold text-yellow-600">{agent.stats.avgRating.toFixed(1)}⭐</div>
                           <div className="text-xs text-gray-600">Avg Rating</div>
                         </div>
                       )}
                       {agent.stats.successRate !== undefined && (
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">{agent.stats.successRate}%</div>
+                          <div className="text-xl font-bold text-green-600">{agent.stats.successRate}%</div>
                           <div className="text-xs text-gray-600">Success Rate</div>
+                        </div>
+                      )}
+                      {agent.stats.uptime !== undefined && (
+                        <div className="text-center">
+                          <div className="text-xl font-bold text-purple-600">{agent.stats.uptime}%</div>
+                          <div className="text-xs text-gray-600">Uptime</div>
+                        </div>
+                      )}
+                      {agent.stats.avgExecutionTime !== undefined && (
+                        <div className="text-center">
+                          <div className="text-xl font-bold text-orange-600">{agent.stats.avgExecutionTime}ms</div>
+                          <div className="text-xs text-gray-600">Avg Time</div>
                         </div>
                       )}
                       {agent.stats.lastExecutedAt && (
@@ -343,13 +397,20 @@ export default function ExecuteAgentPage() {
                   </div>
                 )}
 
-                {/* Requirements Button */}
-                <div className="border-t border-gray-200 pt-4">
+                {/* Action Buttons */}
+                <div className="border-t border-gray-200 pt-4 space-y-3">
                   <button
                     onClick={() => setShowRequirements(true)}
                     className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
                   >
                     View Input/Output Requirements
+                  </button>
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="w-full px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <span>⭐</span>
+                    Rate This Agent
                   </button>
                 </div>
 
@@ -510,6 +571,61 @@ export default function ExecuteAgentPage() {
                   </pre>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Rate {agent?.name}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              How would you rate this agent&apos;s performance?
+            </p>
+            
+            {/* Star Rating */}
+            <div className="flex justify-center mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setUserRating(star)}
+                  className={`text-3xl transition-colors ${
+                    star <= userRating ? 'text-yellow-400' : 'text-gray-300'
+                  } hover:text-yellow-400`}
+                >
+                  ⭐
+                </button>
+              ))}
+            </div>
+            
+            {userRating > 0 && (
+              <p className="text-center text-sm text-gray-600 mb-6">
+                You rated this agent {userRating} star{userRating !== 1 ? 's' : ''}
+              </p>
+            )}
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowRatingModal(false);
+                  setUserRating(0);
+                }}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isSubmittingRating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRatingSubmit}
+                disabled={userRating === 0 || isSubmittingRating}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmittingRating ? 'Submitting...' : 'Submit Rating'}
+              </button>
             </div>
           </div>
         </div>

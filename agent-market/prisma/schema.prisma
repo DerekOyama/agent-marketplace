@@ -24,6 +24,7 @@ model User {
   creditTransactions CreditTransaction[]
   creditPurchases    CreditPurchase[]
   agents             Agent[]
+  agentRatings       AgentRating[]
 }
 
 model Agent {
@@ -60,6 +61,7 @@ model Agent {
   metrics          AgentMetrics[]
   transactions     Transaction[]
   userInteractions UserAgentInteraction[]
+  ratings          AgentRating[]
   ownerId          String?
   owner            User?                  @relation(fields: [ownerId], references: [id])
 
@@ -388,4 +390,18 @@ model CreditTransaction {
   @@index([userId, createdAt])
   @@index([type, createdAt])
   @@index([referenceId, referenceType])
+}
+
+model AgentRating {
+  id        String   @id @default(cuid())
+  agentId   String
+  userId    String
+  rating    Int      // 1-5 star rating
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  agent     Agent    @relation(fields: [agentId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@unique([agentId, userId]) // One rating per user per agent
 }
