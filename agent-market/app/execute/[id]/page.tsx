@@ -67,6 +67,9 @@ export default function ExecuteAgentPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showPriceEdit, setShowPriceEdit] = useState(false);
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const [newPrice, setNewPrice] = useState<string>("");
 
   const parseInputRequirements = (requirements: string): InputField[] => {
     try {
@@ -222,6 +225,13 @@ export default function ExecuteAgentPage() {
       setLoading(false);
     }
   }, [agentId, status, fetchAgent]);
+
+  // Initialize newPrice when agent loads
+  useEffect(() => {
+    if (agent) {
+      setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+    }
+  }, [agent]);
 
   const handleInputChange = (fieldName: string, value: string) => {
     setFormData(prev => ({
@@ -427,6 +437,50 @@ export default function ExecuteAgentPage() {
   };
 
 
+  const handlePriceUpdate = async () => {
+    if (!agent) return;
+
+    const priceInCents = Math.round(parseFloat(newPrice) * 100);
+    if (isNaN(priceInCents) || priceInCents < 0) {
+      setError('Please enter a valid price');
+      return;
+    }
+
+    setIsUpdatingPrice(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/update-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pricePerExecutionCents: priceInCents }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the agent state with new price
+        setAgent(prev => prev ? { ...prev, pricePerExecutionCents: priceInCents } : null);
+        setShowPriceEdit(false);
+        setSuccessMessage(`Price updated to $${newPrice} per execution`);
+        setShowSuccessMessage(true);
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 3000);
+      } else {
+        setError(`Failed to update price: ${result.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      setError(`Error updating price: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdatingPrice(false);
+    }
+  };
+
   const handleDeleteAgent = async () => {
     if (!agent) return;
 
@@ -600,10 +654,57 @@ export default function ExecuteAgentPage() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Execution Cost:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg font-bold text-blue-600">
+                        ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
+                      </span>
+                      {canEdit() && (
+                        <button
+                          onClick={() => setShowPriceEdit(!showPriceEdit)}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Price Edit Form */}
+                  {showPriceEdit && canEdit() && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-blue-800">New Price:</span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-800">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newPrice}
+                            onChange={(e) => setNewPrice(e.target.value)}
+                            className="w-20 px-2 py-1 text-sm border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <button
+                          onClick={handlePriceUpdate}
+                          disabled={isUpdatingPrice}
+                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                          {isUpdatingPrice ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowPriceEdit(false);
+                            setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+                          }}
+                          className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Agent Metrics - Match AgentCard Order */}
