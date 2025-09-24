@@ -154,3 +154,4 @@ export const PUT = withAuth(async (req: NextRequest) => {
     return ApiResponse.error('update_failed', 'Failed to update payout status');
   }
 });
+

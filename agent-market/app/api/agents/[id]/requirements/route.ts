@@ -18,7 +18,7 @@ export async function GET(
     }
 
     // Get agent with input/output schemas
-        const agent = await prisma.agent.findUnique({
+        const agent = await (prisma as any).agent.findUnique({
           where: { id: agentId },
           select: {
             id: true,

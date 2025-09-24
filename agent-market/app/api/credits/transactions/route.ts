@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
 		const limit = Math.min(Math.max(parseInt(limitParam || "20", 10) || 20, 1), 100);
 
 		const [user, transactions] = await Promise.all([
-			prisma.user.findUnique({ where: { id: userId }, select: { creditBalanceCents: true } }),
-			prisma.creditTransaction.findMany({
+			(prisma as any).user.findUnique({ where: { id: userId }, select: { creditBalanceCents: true } }),
+			(prisma as any).creditTransaction.findMany({
 				where: { userId },
 				orderBy: { createdAt: "desc" },
 				take: limit,
@@ -55,3 +55,4 @@ export async function GET(req: NextRequest) {
 		}, { status: 500 });
 	}
 }
+

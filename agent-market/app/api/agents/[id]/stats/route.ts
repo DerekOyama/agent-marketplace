@@ -9,7 +9,7 @@ export async function GET(
     const { id: agentId } = await params;
 
     // Verify agent exists
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId },
       select: { 
         id: true, 
@@ -30,7 +30,7 @@ export async function GET(
     }
 
     // Get real-time execution statistics
-    const executionStats = await prisma.agentExecution.aggregate({
+    const executionStats = await (prisma as any).agentExecution.aggregate({
       where: { agentId },
       _count: { id: true },
       _avg: { duration: true },
@@ -38,25 +38,25 @@ export async function GET(
       _max: { duration: true }
     });
 
-    const successfulExecutions = await prisma.agentExecution.count({
+    const successfulExecutions = await (prisma as any).agentExecution.count({
       where: { agentId, status: 'success' }
     });
 
-    const failedExecutions = await prisma.agentExecution.count({
+    const failedExecutions = await (prisma as any).agentExecution.count({
       where: { agentId, status: { in: ['failed', 'error', 'timeout'] } }
     });
 
     // Get user interaction stats
-    const uniqueUsers = await prisma.userAgentInteraction.count({
+    const uniqueUsers = await (prisma as any).userAgentInteraction.count({
       where: { agentId }
     });
 
-    const repeatUsers = await prisma.userAgentInteraction.count({
+    const repeatUsers = await (prisma as any).userAgentInteraction.count({
       where: { agentId, totalExecutions: { gt: 1 } }
     });
 
     // Get rating stats
-    const ratingStats = await prisma.userAgentInteraction.aggregate({
+    const ratingStats = await (prisma as any).userAgentInteraction.aggregate({
       where: { agentId, rating: { not: null } },
       _avg: { rating: true },
       _count: { rating: true }

@@ -226,3 +226,4 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   // Handle successful invoice payment
   // This could be used for subscription payments, etc.
 }
+

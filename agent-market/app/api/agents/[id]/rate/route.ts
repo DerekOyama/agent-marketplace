@@ -24,7 +24,7 @@ export async function POST(
     }
 
     // Check if agent exists
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId }
     });
 
@@ -33,7 +33,7 @@ export async function POST(
     }
 
     // Check if user has already rated this agent
-    const existingRating = await prisma.agentRating.findFirst({
+    const existingRating = await (prisma as any).agentRating.findFirst({
       where: {
         agentId: agentId,
         userId: userId
@@ -42,13 +42,13 @@ export async function POST(
 
     if (existingRating) {
       // Update existing rating
-      await prisma.agentRating.update({
+      await (prisma as any).agentRating.update({
         where: { id: existingRating.id },
         data: { rating: rating }
       });
     } else {
       // Create new rating
-      await prisma.agentRating.create({
+      await (prisma as any).agentRating.create({
         data: {
           agentId: agentId,
           userId: userId,
@@ -58,15 +58,15 @@ export async function POST(
     }
 
     // Calculate new average rating
-    const allRatings = await prisma.agentRating.findMany({
+    const allRatings = await (prisma as any).agentRating.findMany({
       where: { agentId: agentId },
       select: { rating: true }
     });
 
-    const newAvgRating = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length;
+    const newAvgRating = allRatings.reduce((sum: number, r: any) => sum + r.rating, 0) / allRatings.length;
 
     // Update agent stats
-    await prisma.agent.update({
+    await (prisma as any).agent.update({
       where: { id: agentId },
       data: {
         avgRating: newAvgRating,

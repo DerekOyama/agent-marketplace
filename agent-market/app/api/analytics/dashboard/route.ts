@@ -21,3 +21,4 @@ async function handler(req: NextRequest) {
 }
 
 export const GET = wrapApi(handler);
+

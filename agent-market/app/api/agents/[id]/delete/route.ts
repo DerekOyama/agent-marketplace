@@ -18,7 +18,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     // Check if agent exists
     console.log("Looking up agent...");
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId },
       select: { id: true, name: true, ownerId: true }
     });
@@ -40,13 +40,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     // Check for related records (for logging purposes)
     console.log("Checking for related records...");
-    const executions = await prisma.agentExecution.findMany({
+    const executions = await (prisma as any).agentExecution.findMany({
       where: { agentId: agentId },
       select: { id: true }
     });
     console.log("Related executions:", executions.length);
 
-    const ratings = await prisma.agentRating.findMany({
+    const ratings = await (prisma as any).agentRating.findMany({
       where: { agentId: agentId },
       select: { id: true }
     });
@@ -54,7 +54,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     // Soft delete the agent (mark as deleted, keep all logs and data)
     console.log("Soft deleting agent (marking as deleted)...");
-    await prisma.agent.update({
+    await (prisma as any).agent.update({
       where: { id: agentId },
       data: { 
         isDeleted: true,

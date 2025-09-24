@@ -38,3 +38,4 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
     return ApiResponse.error('fetch_failed', 'Failed to fetch agent metrics');
   }
 });
+
