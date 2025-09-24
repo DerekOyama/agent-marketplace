@@ -2,6 +2,7 @@
 
 import N8nDiscovery from "../../components/N8nDiscovery";
 import Link from "next/link";
+import CreditBalance from "../../components/CreditBalance";
 
 export default function N8nPage() {
 
@@ -18,7 +19,9 @@ export default function N8nPage() {
               ← Back to Agents
             </Link>
             <h1 className="text-4xl font-bold text-gray-900">N8n Integration</h1>
-            <div className="w-32"></div> {/* Spacer for centering */}
+            <div className="flex items-center space-x-4">
+              <CreditBalance />
+            </div>
           </div>
           <p className="text-lg text-gray-800 mb-6">
             Connect your n8n instances and discover workflows to register as AI agents

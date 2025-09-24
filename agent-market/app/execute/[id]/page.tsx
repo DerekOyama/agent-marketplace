@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import CreditBalance from "../../../components/CreditBalance";
 
 interface Agent {
   id: string;
@@ -411,12 +412,15 @@ export default function ExecuteAgentPage() {
               <h1 className="text-3xl font-bold text-gray-900">Run Agent</h1>
               <p className="text-gray-900 mt-1">Execute {agent.name} with your custom input</p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Back to Marketplace
-            </Link>
+            <div className="flex items-center space-x-4">
+              <CreditBalance />
+              <Link
+                href="/"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Back to Marketplace
+              </Link>
+            </div>
           </div>
         </div>
       </div>

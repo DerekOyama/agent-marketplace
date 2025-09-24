@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    // Log the execution
+    // Only deduct balance and save execution record after successful execution
     // Update user balance
     await prisma.user.update({
       where: { id: userId },
@@ -124,10 +124,9 @@ export async function POST(req: NextRequest) {
         duration: 100,
         creditsConsumed: executionCostCents,
         inputData: data,
-        outputData: result
-        // TODO: Add balance tracking after Prisma client regeneration
-        // balanceBeforeCents: balanceBeforeCents,
-        // balanceAfterCents: balanceAfterCents
+        outputData: result,
+        balanceBeforeCents: balanceBeforeCents,
+        balanceAfterCents: balanceAfterCents
       }
     });
 
