@@ -42,6 +42,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
+  const [showMyAgents, setShowMyAgents] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
@@ -50,7 +51,7 @@ export default function Home() {
       // Fast path: load light list first (no heavy stats)
       const debugParam = isAdmin ? "&debug=true" : "";
       const deletedParam = showDeletedAgents ? "&showDeleted=true" : "";
-      const filterParam = filterBy !== "all" ? `&filterBy=${filterBy}` : "";
+      const filterParam = showMyAgents ? "&filterBy=my-agents" : (filterBy !== "all" ? `&filterBy=${filterBy}` : "");
       const url = `/api/agents?mode=light${debugParam}${deletedParam}${filterParam}`;
       console.log("Fetching agents with URL:", url);
       console.log("showDeletedAgents state:", showDeletedAgents);
@@ -92,7 +93,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, showDeletedAgents, filterBy]);
+  }, [isAdmin, showDeletedAgents, filterBy, showMyAgents]);
 
   // Filter and sort agents based on search and sort criteria
   const filteredAndSortedAgents = useMemo(() => {
@@ -164,11 +165,11 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
 
-  // Refetch when showDeletedAgents or filterBy changes
+  // Refetch when showDeletedAgents, filterBy, or showMyAgents changes
   useEffect(() => {
-    console.log("showDeletedAgents or filterBy changed, refetching...");
+    console.log("showDeletedAgents, filterBy, or showMyAgents changed, refetching...");
     fetchAgents();
-  }, [showDeletedAgents, filterBy, fetchAgents]);
+  }, [showDeletedAgents, filterBy, showMyAgents, fetchAgents]);
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
@@ -669,10 +670,27 @@ export default function Home() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 >
                   <option value="all">All Agents</option>
-                  <option value="my-agents">My Agents</option>
                   <option value="active">Active Only</option>
                   {isAdmin && <option value="deleted">Deleted Only</option>}
                 </select>
+              </div>
+
+              {/* My Agents Toggle */}
+              <div className="lg:w-48 flex items-end">
+                <label className="flex items-center h-10">
+                  <input
+                    type="checkbox"
+                    checked={showMyAgents}
+                    onChange={(e) => {
+                      console.log("My Agents toggle changed to:", e.target.checked);
+                      setShowMyAgents(e.target.checked);
+                      // Force refetch immediately
+                      setTimeout(() => fetchAgents(), 100);
+                    }}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">My Agents</span>
+                </label>
               </div>
 
               {/* Deleted Agents Toggle (Admin Only) */}
@@ -719,31 +737,64 @@ export default function Home() {
           ) : (
             !loading && filteredAndSortedAgents.length === 0 && <div className="col-span-full text-center py-16">
               <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-12 max-w-2xl mx-auto">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the AI Agent Marketplace</h3>
-                <p className="text-gray-600 mb-8 text-lg">
-                  Discover powerful AI agents ready to execute your business tasks. 
-                  Browse our collection of pre-built agents or create your own custom solutions.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <button
-                    onClick={() => handleAgentAction("seed", "")}
-                    disabled={loading}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:bg-gray-400 transition-all duration-200 font-medium shadow-lg"
-                  >
-                    {loading ? "Loading..." : "Create Test Agent"}
-                  </button>
-                  <Link 
-                    href="/n8n" 
-                    className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-300 shadow-sm text-center"
-                  >
-                    Connect N8n Workflows
-                  </Link>
-                </div>
+                {showMyAgents ? (
+                  // My Agents empty state
+                  <>
+                    <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No Agents Found</h3>
+                    <p className="text-gray-600 mb-8 text-lg">
+                      You don&apos;t have any agents yet. Create your first agent by connecting an N8N workflow or start with a test agent.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Link 
+                        href="/n8n" 
+                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg text-center"
+                      >
+                        Connect N8N Workflows
+                      </Link>
+                      <button
+                        onClick={() => handleAgentAction("seed", "")}
+                        disabled={loading}
+                        className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-300 shadow-sm"
+                      >
+                        {loading ? "Loading..." : "Create Test Agent"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // General empty state
+                  <>
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the AI Agent Marketplace</h3>
+                    <p className="text-gray-600 mb-8 text-lg">
+                      Discover powerful AI agents ready to execute your business tasks. 
+                      Browse our collection of pre-built agents or create your own custom solutions.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        onClick={() => handleAgentAction("seed", "")}
+                        disabled={loading}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:bg-gray-400 transition-all duration-200 font-medium shadow-lg"
+                      >
+                        {loading ? "Loading..." : "Create Test Agent"}
+                      </button>
+                      <Link 
+                        href="/n8n" 
+                        className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-300 shadow-sm text-center"
+                      >
+                        Connect N8n Workflows
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
