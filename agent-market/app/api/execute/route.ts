@@ -42,6 +42,17 @@ export async function POST(req: NextRequest) {
     let result;
     
     if (agent.type === 'n8n' && agent.webhookUrl) {
+      // Prepare the payload for n8n
+      // Try the original format that might be expected by the n8n workflow
+      const n8nPayload = {
+        data: data,
+        source: "agent-marketplace",
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('Sending to n8n webhook:', agent.webhookUrl);
+      console.log('n8n payload:', JSON.stringify(n8nPayload, null, 2));
+      
       // Call n8n webhook
       const response = await fetch(agent.webhookUrl, {
         method: "POST",
@@ -49,16 +60,17 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
           "User-Agent": "agent-marketplace/1.0"
         },
-        body: JSON.stringify({
-          ...data,
-          source: "agent-marketplace",
-          timestamp: new Date().toISOString()
-        }),
+        body: JSON.stringify(n8nPayload),
       });
 
+      console.log('n8n response status:', response.status);
+      
       if (response.ok) {
         result = await response.json();
+        console.log('n8n response data:', JSON.stringify(result, null, 2));
       } else {
+        const errorText = await response.text();
+        console.log('n8n error response:', errorText);
         throw new Error(`Agent execution failed: ${response.status} ${response.statusText}`);
       }
     } else {
