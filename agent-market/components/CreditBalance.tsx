@@ -38,43 +38,17 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
         onBalanceUpdate?.(data.user.creditBalanceCents);
         try { localStorage.setItem("walletBalanceCents", String(data.user.creditBalanceCents)); } catch {}
       } else {
-        // For any other error, keep cached value if present and avoid noisy UI
-        const cached = typeof window !== 'undefined' ? localStorage.getItem("walletBalanceCents") : null;
-        if (cached !== null) {
-          const cents = parseInt(cached, 10);
-          if (!Number.isNaN(cents)) {
-            setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
-              id: "cached",
-              email: "",
-              creditBalanceCents: cents,
-              updatedAt: new Date().toISOString()
-            });
-          }
-        } else {
-          setUser(null);
-        }
-        setError(null);
+        // For any other error, clear cache and show error
+        try { localStorage.removeItem("walletBalanceCents"); } catch {}
+        setUser(null);
+        setError("Failed to load balance");
         console.error("Credits API error:", data);
       }
     } catch (err) {
-      // Network error: fall back to cache if present; otherwise default $0 without error
-      try {
-        const cached = localStorage.getItem("walletBalanceCents");
-        if (cached !== null) {
-          const cents = parseInt(cached, 10);
-          if (!Number.isNaN(cents)) {
-            setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
-              id: "cached",
-              email: "",
-              creditBalanceCents: cents,
-              updatedAt: new Date().toISOString()
-            });
-          }
-        } else {
-          setUser(null);
-        }
-      } catch {}
-      setError(null);
+      // Network error: clear cache and show error
+      try { localStorage.removeItem("walletBalanceCents"); } catch {}
+      setUser(null);
+      setError("Network error - please check your connection");
       console.error("Credits fetch error:", err);
     } finally {
       setLoading(false);
@@ -87,22 +61,8 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
       setLoading(false);
       return;
     }
-    // Hydrate from cache immediately for fast UI
-    try {
-      const cached = localStorage.getItem("walletBalanceCents");
-      if (cached !== null) {
-        const cents = parseInt(cached, 10);
-        if (!Number.isNaN(cents)) {
-          setUser((prev) => prev ? { ...prev, creditBalanceCents: cents } as User : {
-            id: "cached",
-            email: "",
-            creditBalanceCents: cents,
-            updatedAt: new Date().toISOString()
-          });
-          setLoading(false);
-        }
-      }
-    } catch {}
+    // Clear any stale cache and fetch fresh data from API
+    try { localStorage.removeItem("walletBalanceCents"); } catch {}
     fetchBalance();
   }, [fetchBalance, status]);
 
