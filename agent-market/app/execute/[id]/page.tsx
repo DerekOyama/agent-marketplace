@@ -14,6 +14,9 @@ interface Agent {
   triggerType?: string;
   pricing?: Record<string, unknown>;
   pricePerExecutionCents?: number;
+  ownerId?: string;
+  exampleInput?: string;
+  exampleOutput?: string;
   stats?: {
     totalExecutions?: number;
     avgRating?: number;
@@ -34,7 +37,7 @@ interface InputField {
 }
 
 export default function ExecuteAgentPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const params = useParams();
   const router = useRouter();
   const agentId = params.id as string;
@@ -55,6 +58,11 @@ export default function ExecuteAgentPage() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [testInput, setTestInput] = useState("");
+  const [testOutput, setTestOutput] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -263,6 +271,81 @@ export default function ExecuteAgentPage() {
     }
   };
 
+  const isOwner = () => {
+    return status === "authenticated" && session?.user?.email && agent?.ownerId && session.user.email === agent.ownerId;
+  };
+
+  const handleTestAgent = async () => {
+    if (!agent || !testInput.trim()) return;
+
+    setIsTesting(true);
+    try {
+      const formattedInput = formatInputForAgent({ text: testInput });
+      
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: agent.id,
+          data: formattedInput
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setTestOutput(JSON.stringify(result.data, null, 2));
+      } else {
+        setTestOutput(`Error: ${result.message || result.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      setTestOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSaveExample = async () => {
+    if (!agent || !testInput.trim() || !testOutput.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/update-example`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exampleInput: testInput,
+          exampleOutput: testOutput
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the agent with new examples
+        setAgent({
+          ...agent,
+          exampleInput: testInput,
+          exampleOutput: testOutput
+        });
+        setShowEditModal(false);
+        setTestInput("");
+        setTestOutput("");
+        alert('Example saved successfully!');
+      } else {
+        alert(`Failed to save example: ${result.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert(`Error saving example: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -419,13 +502,35 @@ export default function ExecuteAgentPage() {
                     <span>⭐</span>
                     Rate This Agent
                   </button>
+                  {isOwner() && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <span>✏️</span>
+                      Edit Agent
+                    </button>
+                  )}
                 </div>
 
-                {exampleInput && (
+                {(exampleInput || agent.exampleInput) && (
                   <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-800 mb-2">Example Input</h4>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <pre className="text-sm text-gray-900 whitespace-pre-wrap">{exampleInput}</pre>
+                    <h4 className="text-sm font-medium text-gray-800 mb-3">Example</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <h5 className="text-xs font-medium text-gray-600 mb-1">Input:</h5>
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <pre className="text-sm text-gray-900 whitespace-pre-wrap">{exampleInput || agent.exampleInput}</pre>
+                        </div>
+                      </div>
+                      {agent.exampleOutput && (
+                        <div>
+                          <h5 className="text-xs font-medium text-gray-600 mb-1">Output:</h5>
+                          <div className="bg-green-50 rounded-lg p-3">
+                            <pre className="text-sm text-gray-900 whitespace-pre-wrap">{agent.exampleOutput}</pre>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -633,6 +738,102 @@ export default function ExecuteAgentPage() {
               >
                 {isSubmittingRating ? 'Submitting...' : 'Submit Rating'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Agent Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Edit Agent - {agent?.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setTestInput("");
+                  setTestOutput("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-3">Test Agent</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Test your agent with sample input to generate example output for customers.
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Test Input
+                    </label>
+                    <textarea
+                      value={testInput}
+                      onChange={(e) => setTestInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                      placeholder="Enter test input for your agent..."
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleTestAgent}
+                    disabled={!testInput.trim() || isTesting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isTesting ? 'Testing...' : 'Test Agent'}
+                  </button>
+                  
+                  {testOutput && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Test Output
+                      </label>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <pre className="text-sm text-gray-900 whitespace-pre-wrap">{testOutput}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {testOutput && (
+                <div className="border-t border-gray-200 pt-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">Save Example</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Save this test case as an example to show customers what your agent does.
+                  </p>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSaveExample}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? 'Saving...' : 'Save Example'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTestInput("");
+                        setTestOutput("");
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

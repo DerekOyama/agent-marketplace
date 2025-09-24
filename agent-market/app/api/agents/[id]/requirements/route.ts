@@ -18,26 +18,29 @@ export async function GET(
     }
 
     // Get agent with input/output schemas
-    const agent = await prisma.agent.findUnique({
-      where: { id: agentId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        type: true,
-        inputSchema: true,
-        outputSchema: true,
-        metadata: true,
-        pricing: true,
-        pricePerExecutionCents: true,
-        stats: true,
-        isActive: true,
-        triggerType: true,
-        webhookUrl: true,
-        n8nWorkflowId: true,
-        n8nInstanceUrl: true,
-      } as Prisma.AgentSelect
-    });
+        const agent = await prisma.agent.findUnique({
+          where: { id: agentId },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            type: true,
+            inputSchema: true,
+            outputSchema: true,
+            metadata: true,
+            pricing: true,
+            pricePerExecutionCents: true,
+            stats: true,
+            isActive: true,
+            triggerType: true,
+            webhookUrl: true,
+            n8nWorkflowId: true,
+            n8nInstanceUrl: true,
+            ownerId: true,
+            exampleInput: true,
+            exampleOutput: true,
+          } as Prisma.AgentSelect
+        });
 
     if (!agent) {
       return NextResponse.json(
@@ -96,6 +99,9 @@ export async function GET(
         pricing: agent.pricing,
         pricePerExecutionCents: agent.pricePerExecutionCents,
         stats: agent.stats,
+        ownerId: agent.ownerId,
+        exampleInput: agent.exampleInput,
+        exampleOutput: agent.exampleOutput,
       },
       input: {
         schema: inputSchema as Record<string, unknown>,
