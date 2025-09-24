@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: "Example input and output are required" }, { status: 400 });
     }
 
-    // Check if agent exists and user is the owner
+    // Check if agent exists
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       select: { id: true, ownerId: true }
@@ -33,9 +33,10 @@ export async function POST(
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Check if user is the owner
-    if (agent.ownerId !== userId) {
-      return NextResponse.json({ error: "Only the agent owner can update examples" }, { status: 403 });
+    // Check if user is the owner or admin
+    const isAdmin = userId === "derek.oyama@gmail.com";
+    if (agent.ownerId !== userId && !isAdmin) {
+      return NextResponse.json({ error: "Only the agent owner or admin can update examples" }, { status: 403 });
     }
 
     // Update agent with new examples

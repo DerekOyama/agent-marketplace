@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
           "User-Agent": "agent-marketplace/1.0"
         },
         body: JSON.stringify({
-          data: data,
+          ...data,
           source: "agent-marketplace",
           timestamp: new Date().toISOString()
         }),

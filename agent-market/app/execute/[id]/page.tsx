@@ -167,12 +167,10 @@ export default function ExecuteAgentPage() {
 
   const formatInputForAgent = (formData: Record<string, string>): Record<string, unknown> => {
     // Format the form data according to agent specifications
-    // For n8n agents, we typically expect { data: { text: "..." } }
+    // For n8n agents, we expect { text: "..." } (without data wrapper)
     if (agent?.type === 'n8n') {
       return {
-        data: {
-          text: formData.text || ''
-        }
+        text: formData.text || ''
       };
     }
     
@@ -273,6 +271,14 @@ export default function ExecuteAgentPage() {
 
   const isOwner = () => {
     return status === "authenticated" && session?.user?.email && agent?.ownerId && session.user.email === agent.ownerId;
+  };
+
+  const isAdmin = () => {
+    return status === "authenticated" && session?.user?.email === "derek.oyama@gmail.com";
+  };
+
+  const canEdit = () => {
+    return isOwner() || isAdmin();
   };
 
   const handleTestAgent = async () => {
@@ -502,13 +508,13 @@ export default function ExecuteAgentPage() {
                     <span>⭐</span>
                     Rate This Agent
                   </button>
-                  {isOwner() && (
+                  {canEdit() && (
                     <button
                       onClick={() => setShowEditModal(true)}
                       className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <span>✏️</span>
-                      Edit Agent
+                      {isAdmin() ? 'Admin Edit' : 'Edit Agent'}
                     </button>
                   )}
                 </div>
@@ -749,7 +755,7 @@ export default function ExecuteAgentPage() {
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900">
-                Edit Agent - {agent?.name}
+                {isAdmin() ? 'Admin Edit' : 'Edit Agent'} - {agent?.name}
               </h3>
               <button
                 onClick={() => {
@@ -769,7 +775,10 @@ export default function ExecuteAgentPage() {
               <div>
                 <h4 className="text-lg font-medium text-gray-900 mb-3">Test Agent</h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  Test your agent with sample input to generate example output for customers.
+                  {isAdmin() 
+                    ? 'Test this agent with sample input to generate example output for customers. As an admin, you can edit any agent.'
+                    : 'Test your agent with sample input to generate example output for customers.'
+                  }
                 </p>
                 
                 <div className="space-y-4">
