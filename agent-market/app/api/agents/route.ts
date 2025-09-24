@@ -6,9 +6,21 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const mode = url.searchParams.get('mode') || 'full'; // 'light' or 'full'
     const debugMode = url.searchParams.get('debug') === 'true';
+    const showDeleted = url.searchParams.get('showDeleted') === 'true';
+    
+    // Build where clause based on parameters
+    const whereClause: Record<string, unknown> = {};
+    
+    if (!debugMode) {
+      whereClause.isHidden = false;
+    }
+    
+    if (!showDeleted) {
+      whereClause.isDeleted = false;
+    }
     
     const agents = await prisma.agent.findMany({
-      where: debugMode ? {} : { isHidden: false }, // Show hidden agents only in debug mode
+      where: whereClause,
       orderBy: { createdAt: 'desc' }, // Newest first
       select: { 
         id: true, 
@@ -24,6 +36,7 @@ export async function GET(req: Request) {
         triggerType: true,
         isActive: true,
         isHidden: true,
+        isDeleted: true,
         metadata: true,
         pricing: true,
         stats: mode === 'full',
