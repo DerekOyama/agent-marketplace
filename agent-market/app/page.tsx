@@ -27,6 +27,7 @@ interface Agent {
   stats?: Record<string, unknown>;
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
+  ownerId?: string;
 }
 
 export default function Home() {
@@ -55,6 +56,8 @@ export default function Home() {
       const url = `/api/agents?mode=light${debugParam}${deletedParam}${filterParam}`;
       console.log("Fetching agents with URL:", url);
       console.log("showDeletedAgents state:", showDeletedAgents);
+      console.log("showMyAgents state:", showMyAgents);
+      console.log("filterParam:", filterParam);
       const res = await fetch(url);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
@@ -69,7 +72,7 @@ export default function Home() {
       
       if (data.agents && data.agents.length > 0) {
         // Show light list immediately
-        console.log("Setting agents:", data.agents.map(a => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
+        console.log("Setting agents:", data.agents.map(a => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden, ownerId: a.ownerId })));
         setAgents(data.agents);
 
         // Background upgrade to full stats without blocking UI
@@ -79,12 +82,14 @@ export default function Home() {
             const fullText = await fullRes.text();
             const fullData = fullText ? JSON.parse(fullText) : {};
             if (fullData.agents) {
-              console.log("Setting full stats agents:", fullData.agents.map((a: Agent) => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
+              console.log("Setting full stats agents:", fullData.agents.map((a: Agent) => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden, ownerId: a.ownerId })));
               setAgents(fullData.agents);
             }
           }
         } catch {}
       } else {
+        // No agents found - set empty array immediately
+        console.log("No agents found, setting empty array");
         setAgents([]);
       }
     } catch (error) {

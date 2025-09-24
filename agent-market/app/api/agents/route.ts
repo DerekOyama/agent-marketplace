@@ -40,11 +40,14 @@ export async function GET(req: Request) {
     
     // Filter by owner (My Agents filter)
     if (filterBy === 'my-agents') {
+      console.log("My Agents filter applied:", { currentUserId, totalAgentsBefore: filteredAgents.length });
       if (!currentUserId) {
         // If user is not authenticated, return empty array for my-agents filter
+        console.log("User not authenticated, returning empty array for my-agents");
         filteredAgents = [];
       } else {
         filteredAgents = filteredAgents.filter(agent => agent.ownerId === currentUserId);
+        console.log("Filtered by ownerId:", { currentUserId, agentsAfterFilter: filteredAgents.length });
       }
     }
     
