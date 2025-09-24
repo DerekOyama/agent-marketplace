@@ -111,11 +111,14 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
 
     setIsDeleting(true);
     try {
+      console.log('Attempting to delete agent:', agent.id, agent.name);
       const response = await fetch(`/api/agents/${agent.id}/delete`, {
         method: 'DELETE',
       });
 
+      console.log('Delete response status:', response.status);
       const result = await response.json();
+      console.log('Delete response data:', result);
       
       if (result.success) {
         // Refresh the agent list
@@ -124,9 +127,10 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         setShowDeleteConfirm(false);
         setDeleteConfirmText('');
       } else {
-        alert(`Failed to delete agent: ${result.error}`);
+        alert(`Failed to delete agent: ${result.error || result.message || 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Delete error:', error);
       alert(`Error deleting agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsDeleting(false);
@@ -380,55 +384,80 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         onClose={() => setShowRequirements(false)}
       />
 
-      {/* Hide/Unhide Confirmation Modal */}
+      {/* Hide/Unhide Confirmation Form */}
       {showHideConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {agent.isHidden ? 'Unhide Agent' : 'Hide Agent'}
-            </h3>
-            <p className="text-gray-600 mb-6">
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-blue-800">
+                {agent.isHidden ? '👁️ Unhide Agent' : '🙈 Hide Agent'}
+              </h4>
+              <button
+                onClick={() => setShowHideConfirm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-sm text-blue-700">
               {agent.isHidden 
                 ? `Are you sure you want to make "${agent.name}" visible to all users?`
                 : `Are you sure you want to hide "${agent.name}" from users? It will no longer appear in the agent list.`
               }
             </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowHideConfirm(false)}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={isHiding}
-              >
-                Cancel
-              </button>
+            
+            <div className="flex space-x-2">
               <button
                 onClick={handleToggleVisibility}
                 disabled={isHiding}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                className={`px-3 py-2 text-white rounded-lg transition-colors text-sm font-medium ${
                   agent.isHidden 
                     ? 'bg-green-600 hover:bg-green-700' 
                     : 'bg-red-600 hover:bg-red-700'
-                } disabled:opacity-50`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isHiding ? 'Processing...' : (agent.isHidden ? 'Unhide' : 'Hide')}
+              </button>
+              <button
+                onClick={() => setShowHideConfirm(false)}
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                disabled={isHiding}
+              >
+                Cancel
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Price Edit Modal */}
+      {/* Price Edit Form */}
       {showPriceEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Edit Agent Price
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Set the price per execution for &quot;{agent.name}&quot;
+        <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-purple-800">💰 Edit Agent Price</h4>
+              <button
+                onClick={() => {
+                  setShowPriceEdit(false);
+                  setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-sm text-purple-700">
+              Set the price per execution for <strong>&quot;{agent.name}&quot;</strong>
             </p>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            
+            <div>
+              <label className="block text-sm font-medium text-purple-700 mb-1">
                 Price per execution (USD)
               </label>
               <div className="relative">
@@ -439,31 +468,31 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                   min="0"
                   value={newPrice}
                   onChange={(e) => setNewPrice(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-8 pr-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                   placeholder="0.00"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-purple-600 mt-1">
                 Current price: ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
               </p>
             </div>
-            <div className="flex gap-3 justify-end">
+            
+            <div className="flex space-x-2">
+              <button
+                onClick={handlePriceUpdate}
+                disabled={isUpdatingPrice}
+                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {isUpdatingPrice ? 'Updating...' : 'Update Price'}
+              </button>
               <button
                 onClick={() => {
                   setShowPriceEdit(false);
                   setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
                 }}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={isUpdatingPrice}
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handlePriceUpdate}
-                disabled={isUpdatingPrice}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-              >
-                {isUpdatingPrice ? 'Updating...' : 'Update Price'}
               </button>
             </div>
           </div>
@@ -472,7 +501,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
 
       {/* Delete Confirmation Form */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg p-4 border-2 border-red-200">
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-red-800">⚠️ Delete Agent</h4>
