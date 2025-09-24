@@ -35,8 +35,28 @@ export async function POST(req: NextRequest) {
     // Check if user has sufficient credits
     const executionCostCents = (agent as { pricePerExecutionCents?: number }).pricePerExecutionCents || 0;
     
-    // For now, we'll skip credit checking for demo purposes
-    // In production, you'd check user credits here
+    // Get user's current balance
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { creditBalanceCents: true }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const balanceBeforeCents = user.creditBalanceCents;
+    const balanceAfterCents = balanceBeforeCents - executionCostCents;
+
+    // Check if user has sufficient credits
+    if (balanceAfterCents < 0) {
+      return NextResponse.json({ 
+        error: "insufficient_credits",
+        message: "Insufficient credits for this execution",
+        requiredCredits: executionCostCents,
+        availableCredits: balanceBeforeCents
+      }, { status: 400 });
+    }
 
     // Execute the agent based on its type
     let result;
@@ -87,6 +107,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Log the execution
+    // Update user balance
+    await prisma.user.update({
+      where: { id: userId },
+      data: { creditBalanceCents: balanceAfterCents }
+    });
+
+    // Save execution record
     const executionId = `exec_${Date.now()}`;
     await prisma.agentExecution.create({
       data: {
@@ -98,6 +125,9 @@ export async function POST(req: NextRequest) {
         creditsConsumed: executionCostCents,
         inputData: data,
         outputData: result
+        // TODO: Add balance tracking after Prisma client regeneration
+        // balanceBeforeCents: balanceBeforeCents,
+        // balanceAfterCents: balanceAfterCents
       }
     });
 

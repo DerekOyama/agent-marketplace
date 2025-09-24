@@ -130,6 +130,8 @@ model AgentExecution {
   ipAddress       String?
   inputData       Json?
   outputData      Json?
+  balanceBeforeCents Int?
+  balanceAfterCents  Int?
   startedAt       DateTime  @default(now())
   completedAt     DateTime?
   createdAt       DateTime  @default(now())

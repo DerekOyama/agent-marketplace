@@ -17,6 +17,8 @@ interface Execution {
   creditsConsumed: number;
   inputData: unknown;
   outputData: unknown;
+  balanceBeforeCents: number | null;
+  balanceAfterCents: number | null;
   createdAt: string;
 }
 
@@ -169,7 +171,17 @@ export default function HistoryPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Duration: {execution.duration}ms</span>
+                    <div className="flex items-center space-x-4">
+                      <span>Duration: {execution.duration}ms</span>
+                      {execution.balanceBeforeCents !== null && execution.balanceAfterCents !== null && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Balance:</span>
+                          <span className="font-mono">
+                            ${(execution.balanceBeforeCents / 100).toFixed(2)} → ${(execution.balanceAfterCents / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <span>{new Date(execution.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
