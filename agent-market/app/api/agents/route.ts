@@ -10,65 +10,62 @@ export async function GET(req: Request) {
     
     console.log("API received parameters:", { mode, debugMode, showDeleted });
     
-    // Build where clause based on parameters
-    const whereClause: Record<string, unknown> = {};
+    // Get all agent data including isHidden and isDeleted using raw query
+    // We need to query all agents (not just the filtered ones) to get the correct isDeleted values
+    const allAgentsRaw = await prisma.$queryRaw`
+      SELECT id, name, description, "runUrl", "quoteUrl", token, type, "n8nWorkflowId", 
+             "n8nInstanceUrl", "webhookUrl", "triggerType", "isActive", "isHidden", "isDeleted",
+             metadata, pricing, "inputSchema", "outputSchema", "createdAt", "updatedAt",
+             "totalExecutions", "avgRating", "totalUsers", "lastExecutedAt"
+      FROM "Agent"
+      ORDER BY "createdAt" DESC
+    ` as Array<{
+      id: string; name: string; description: string | null; runUrl: string; quoteUrl: string;
+      token: string; type: string; n8nWorkflowId: string | null; n8nInstanceUrl: string | null;
+      webhookUrl: string | null; triggerType: string | null; isActive: boolean;
+      isHidden: boolean; isDeleted: boolean; metadata: any; pricing: any;
+      inputSchema: any; outputSchema: any; createdAt: Date; updatedAt: Date;
+      totalExecutions: number; avgRating: number | null; totalUsers: number | null;
+      lastExecutedAt: Date | null;
+    }>;
+    
+    // Apply the same filtering logic as the original query
+    let filteredAgents = allAgentsRaw;
     
     if (!debugMode) {
-      whereClause.isHidden = false;
+      filteredAgents = filteredAgents.filter(agent => !agent.isHidden);
     }
     
-    // Filter out deleted agents unless explicitly requested to show them
-    // When showDeleted is true, we include deleted agents
-    // When showDeleted is false or not specified, we exclude deleted agents
     if (!showDeleted) {
-      whereClause.isDeleted = false;
+      filteredAgents = filteredAgents.filter(agent => !agent.isDeleted);
     }
     
-    console.log("Where clause:", whereClause);
-    
-    const agents = await prisma.agent.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' }, // Newest first
-      select: { 
-        id: true, 
-        name: true, 
-        description: true,
-        runUrl: true,
-        quoteUrl: true,
-        token: true,
-        type: true,
-        n8nWorkflowId: true,
-        n8nInstanceUrl: true,
-        webhookUrl: true,
-        triggerType: true,
-        isActive: true,
-        metadata: true,
-        pricing: true,
-        stats: mode === 'full',
-        inputSchema: true,
-        outputSchema: true,
-        createdAt: true,
-        updatedAt: true,
-        totalExecutions: mode === 'full',
-        avgRating: mode === 'full',
-        totalUsers: mode === 'full',
-        lastExecutedAt: mode === 'full'
-      }
-    });
-    
-    // Get isHidden and isDeleted values using raw query since they're not in TypeScript types yet
-    const agentIds = agents.map(a => a.id);
-    const rawAgentData = agentIds.length > 0 ? await prisma.$queryRaw`
-      SELECT id, "isHidden", "isDeleted" FROM "Agent" WHERE id = ANY(${agentIds})
-    ` as Array<{ id: string; isHidden: boolean; isDeleted: boolean }> : [];
-    
-    const hiddenDeletedMap = new Map(rawAgentData.map(a => [a.id, { isHidden: a.isHidden, isDeleted: a.isDeleted }]));
-    
-    // Add isHidden and isDeleted fields manually
-    const agentsWithFields = agents.map(agent => ({
-      ...agent,
-      isHidden: hiddenDeletedMap.get(agent.id)?.isHidden ?? false,
-      isDeleted: hiddenDeletedMap.get(agent.id)?.isDeleted ?? false
+    // Convert to the expected format
+    const agentsWithFields = filteredAgents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      description: agent.description,
+      runUrl: agent.runUrl,
+      quoteUrl: agent.quoteUrl,
+      token: agent.token,
+      type: agent.type,
+      n8nWorkflowId: agent.n8nWorkflowId,
+      n8nInstanceUrl: agent.n8nInstanceUrl,
+      webhookUrl: agent.webhookUrl,
+      triggerType: agent.triggerType,
+      isActive: agent.isActive,
+      isHidden: agent.isHidden,
+      isDeleted: agent.isDeleted,
+      metadata: agent.metadata,
+      pricing: agent.pricing,
+      inputSchema: agent.inputSchema,
+      outputSchema: agent.outputSchema,
+      createdAt: agent.createdAt.toISOString(),
+      updatedAt: agent.updatedAt.toISOString(),
+      totalExecutions: mode === 'full' ? agent.totalExecutions : undefined,
+      avgRating: mode === 'full' ? agent.avgRating : undefined,
+      totalUsers: mode === 'full' ? agent.totalUsers : undefined,
+      lastExecutedAt: mode === 'full' ? agent.lastExecutedAt?.toISOString() : undefined
     }));
     
     console.log("Found agents:", agentsWithFields.length);
