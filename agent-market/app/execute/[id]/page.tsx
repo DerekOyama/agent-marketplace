@@ -397,7 +397,7 @@ export default function ExecuteAgentPage() {
                     {/* Uptime */}
                     <div className="text-center">
                       <div className="text-xl font-bold text-green-600">
-                        {agent.stats?.uptime || '99.9'}%
+                        {agent.stats?.uptime || '99.9%'}
                       </div>
                       <div className="text-xs text-gray-700">Uptime</div>
                     </div>
@@ -463,7 +463,7 @@ export default function ExecuteAgentPage() {
                           onChange={(e) => handleInputChange(field.name, e.target.value)}
                           placeholder={field.example || `Enter ${field.name}...`}
                           rows={6}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-500"
                           required={field.required}
                         />
                       ) : (
@@ -472,7 +472,7 @@ export default function ExecuteAgentPage() {
                           value={formData[field.name] || ''}
                           onChange={(e) => handleInputChange(field.name, e.target.value)}
                           placeholder={field.example || `Enter ${field.name}...`}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                           required={field.required}
                         />
                       )}
