@@ -4,6 +4,7 @@ import CreditPurchase from "../../components/CreditPurchase";
 import CreditHistory from "../../components/CreditHistory";
 import CreditBalance from "../../components/CreditBalance";
 import PayoutDashboard from "../../components/PayoutDashboard";
+import MyAgents from "../../components/MyAgents";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -103,6 +104,17 @@ function FundsPageContent() {
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
               Sign in to view your earnings and request payouts.
+            </div>
+          )}
+        </div>
+
+        {/* My Agents */}
+        <div className="max-w-7xl mx-auto mb-8">
+          {status === "authenticated" ? (
+            <MyAgents refreshTrigger={refreshTrigger} />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
+              Sign in to view your agents and revenue.
             </div>
           )}
         </div>
