@@ -96,6 +96,17 @@ function FundsPageContent() {
           )}
         </div>
 
+        {/* Earnings & Payouts */}
+        <div className="max-w-7xl mx-auto mb-8">
+          {status === "authenticated" ? (
+            <PayoutDashboard />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
+              Sign in to view your earnings and request payouts.
+            </div>
+          )}
+        </div>
+
         {/* Credit History */}
         <div className="max-w-3xl mx-auto mb-8">
           {status === "authenticated" ? (
@@ -103,17 +114,6 @@ function FundsPageContent() {
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
               Sign in to view your balance history.
-            </div>
-          )}
-        </div>
-
-        {/* Earnings & Payouts */}
-        <div className="max-w-7xl mx-auto">
-          {status === "authenticated" ? (
-            <PayoutDashboard />
-          ) : (
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
-              Sign in to view your earnings and request payouts.
             </div>
           )}
         </div>

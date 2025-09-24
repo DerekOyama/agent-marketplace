@@ -25,10 +25,11 @@ interface CreditHistoryProps {
 }
 
 export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
-  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<CreditTransaction[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const fetchTransactions = async () => {
     try {
@@ -43,7 +44,7 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
         return;
       }
 
-      setTransactions(data.transactions || []);
+      setAllTransactions(data.transactions || []);
       setCurrentBalance(data.currentBalance || 0);
       setError(null);
     } catch (err) {
@@ -72,6 +73,9 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
     });
   };
 
+  // Show only 3 transactions by default, all if showAll is true
+  const displayedTransactions = showAll ? allTransactions : allTransactions.slice(0, 3);
+
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case "purchase":
@@ -84,6 +88,10 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
         return "🎁";
       case "adjustment":
         return "🔧";
+      case "earnings":
+        return "💎";
+      case "payout":
+        return "💸";
       default:
         return "💳";
     }
@@ -93,8 +101,10 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
     switch (type) {
       case "purchase":
       case "bonus":
+      case "earnings":
         return "text-green-600";
       case "usage":
+      case "payout":
         return "text-red-600";
       case "refund":
         return "text-blue-600";
@@ -145,7 +155,7 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {allTransactions.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-gray-700 mb-2">📝</div>
           <p className="text-gray-900 font-medium">No transactions yet</p>
@@ -153,7 +163,7 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {transactions.map((transaction) => (
+          {displayedTransactions.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-3 bg-gray-100 rounded-lg border border-gray-300"
@@ -189,12 +199,22 @@ export default function CreditHistory({ refreshTrigger }: CreditHistoryProps) {
       )}
 
       <div className="mt-4 pt-4 border-t border-gray-300">
-        <button
-          onClick={fetchTransactions}
-          className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-        >
-          Refresh Transactions
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchTransactions}
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            Refresh Transactions
+          </button>
+          {allTransactions.length > 3 && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            >
+              {showAll ? "Show Less" : `View More (${allTransactions.length - 3} more)`}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
