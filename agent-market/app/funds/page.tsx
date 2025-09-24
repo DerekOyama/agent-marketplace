@@ -3,6 +3,7 @@ import Link from "next/link";
 import CreditPurchase from "../../components/CreditPurchase";
 import CreditHistory from "../../components/CreditHistory";
 import CreditBalance from "../../components/CreditBalance";
+import PayoutDashboard from "../../components/PayoutDashboard";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -77,13 +78,13 @@ function FundsPageContent() {
 						>
 							← Back to Agents
 						</Link>
-            <h1 className="text-4xl font-bold text-gray-900">Add Funds</h1>
+            <h1 className="text-4xl font-bold text-gray-900">Wallet & Earnings</h1>
             <div className="w-32 flex justify-end">
               <CreditBalance refreshTrigger={refreshTrigger} />
             </div>
 					</div>
 					<p className="text-lg text-gray-800 mb-6">
-						Add money to your account balance to pay for agent executions.
+						Manage your wallet balance and track your agent earnings.
 					</p>
                 {/* Temporary GET test tool */}
                 <div className="max-w-3xl mx-auto mb-6 bg-white border border-gray-200 rounded-lg p-4">
@@ -135,12 +136,23 @@ function FundsPageContent() {
         </div>
 
         {/* Credit History */}
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto mb-8">
           {status === "authenticated" ? (
             <CreditHistory refreshTrigger={refreshTrigger} />
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
               Sign in to view your balance history.
+            </div>
+          )}
+        </div>
+
+        {/* Earnings & Payouts */}
+        <div className="max-w-7xl mx-auto">
+          {status === "authenticated" ? (
+            <PayoutDashboard />
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center text-gray-700">
+              Sign in to view your earnings and request payouts.
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AgentRequirementsModal from "./AgentRequirementsModal";
 
@@ -48,6 +48,11 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Update newPrice when agent prop changes (after refresh)
+  useEffect(() => {
+    setNewPrice(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+  }, [agent.pricePerExecutionCents]);
 
   const handleAction = async (action: string) => {
     if (action === 'delete-agent') {
