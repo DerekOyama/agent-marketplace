@@ -111,8 +111,6 @@ export default function Home() {
     if (filterBy !== "all") {
       if (filterBy === "active") {
         filtered = filtered.filter(agent => agent.isActive && (!agent.isDeleted || showDeletedAgents));
-      } else if (filterBy === "hidden") {
-        filtered = filtered.filter(agent => agent.isHidden && (!agent.isDeleted || showDeletedAgents));
       } else if (filterBy === "deleted") {
         filtered = filtered.filter(agent => agent.isDeleted);
       }
@@ -672,7 +670,6 @@ export default function Home() {
                 >
                   <option value="all">All Agents</option>
                   <option value="active">Active Only</option>
-                  <option value="hidden">Hidden Only</option>
                   {isAdmin && <option value="deleted">Deleted Only</option>}
                 </select>
               </div>
