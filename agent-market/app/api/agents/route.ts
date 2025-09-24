@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
+import { getCurrentUserId } from "../../../lib/auth";
 
 export async function GET(req: Request) {
   try {
@@ -7,8 +8,12 @@ export async function GET(req: Request) {
     const mode = url.searchParams.get('mode') || 'full'; // 'light' or 'full'
     const debugMode = url.searchParams.get('debug') === 'true';
     const showDeleted = url.searchParams.get('showDeleted') === 'true';
+    const filterBy = url.searchParams.get('filterBy') || 'all'; // 'all', 'my-agents'
     
-    console.log("API received parameters:", { mode, debugMode, showDeleted });
+    // Get current user ID for filtering
+    const currentUserId = await getCurrentUserId();
+    
+    console.log("API received parameters:", { mode, debugMode, showDeleted, filterBy, currentUserId });
     
     // Get all agent data including isHidden and isDeleted using raw query
     // We need to query all agents (not just the filtered ones) to get the correct isDeleted values
@@ -32,6 +37,16 @@ export async function GET(req: Request) {
     
     // Apply the same filtering logic as the original query
     let filteredAgents = allAgentsRaw;
+    
+    // Filter by owner (My Agents filter)
+    if (filterBy === 'my-agents') {
+      if (!currentUserId) {
+        // If user is not authenticated, return empty array for my-agents filter
+        filteredAgents = [];
+      } else {
+        filteredAgents = filteredAgents.filter(agent => agent.ownerId === currentUserId);
+      }
+    }
     
     // Filter by deletion status
     if (!showDeleted) {

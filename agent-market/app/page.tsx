@@ -50,7 +50,8 @@ export default function Home() {
       // Fast path: load light list first (no heavy stats)
       const debugParam = isAdmin ? "&debug=true" : "";
       const deletedParam = showDeletedAgents ? "&showDeleted=true" : "";
-      const url = `/api/agents?mode=light${debugParam}${deletedParam}`;
+      const filterParam = filterBy !== "all" ? `&filterBy=${filterBy}` : "";
+      const url = `/api/agents?mode=light${debugParam}${deletedParam}${filterParam}`;
       console.log("Fetching agents with URL:", url);
       console.log("showDeletedAgents state:", showDeletedAgents);
       const res = await fetch(url);
@@ -72,7 +73,7 @@ export default function Home() {
 
         // Background upgrade to full stats without blocking UI
         try {
-          const fullRes = await fetch(`/api/agents?mode=full${debugParam}${deletedParam}`);
+          const fullRes = await fetch(`/api/agents?mode=full${debugParam}${deletedParam}${filterParam}`);
           if (fullRes.ok) {
             const fullText = await fullRes.text();
             const fullData = fullText ? JSON.parse(fullText) : {};
@@ -91,7 +92,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, showDeletedAgents]);
+  }, [isAdmin, showDeletedAgents, filterBy]);
 
   // Filter and sort agents based on search and sort criteria
   const filteredAndSortedAgents = useMemo(() => {
@@ -163,11 +164,11 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
 
-  // Refetch when showDeletedAgents changes
+  // Refetch when showDeletedAgents or filterBy changes
   useEffect(() => {
-    console.log("showDeletedAgents changed, refetching...");
+    console.log("showDeletedAgents or filterBy changed, refetching...");
     fetchAgents();
-  }, [showDeletedAgents, fetchAgents]);
+  }, [showDeletedAgents, filterBy, fetchAgents]);
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
@@ -668,6 +669,7 @@ export default function Home() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 >
                   <option value="all">All Agents</option>
+                  <option value="my-agents">My Agents</option>
                   <option value="active">Active Only</option>
                   {isAdmin && <option value="deleted">Deleted Only</option>}
                 </select>
