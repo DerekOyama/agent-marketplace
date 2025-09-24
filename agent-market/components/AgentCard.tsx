@@ -100,7 +100,10 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   };
 
   const handleDeleteAgent = async () => {
-    if (!confirm(`Are you sure you want to delete "${agent.name}"? This action cannot be undone.`)) {
+    const confirmText = prompt(`To delete "${agent.name}", please type the agent name exactly as shown:`);
+    
+    if (confirmText !== agent.name) {
+      alert(`Deletion cancelled. You typed "${confirmText}" but need to type "${agent.name}" exactly.`);
       return;
     }
 

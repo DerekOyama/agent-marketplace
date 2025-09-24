@@ -66,6 +66,7 @@ export default function ExecuteAgentPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -291,6 +292,9 @@ export default function ExecuteAgentPage() {
 
     setIsTesting(true);
     try {
+      // Use the text input from the form, or auto-fill with default if empty
+      const testInput = formData.text?.trim() || "Test input from admin";
+      
       const response = await fetch('/api/execute', {
         method: 'POST',
         headers: {
@@ -298,30 +302,30 @@ export default function ExecuteAgentPage() {
         },
         body: JSON.stringify({
           agentId: agent.id,
-          data: { text: "Test input from admin" }
+          data: { text: testInput }
         }),
       });
 
       const result = await response.json();
       
       if (result.success) {
-        setTestResult(`✅ Test successful! Output: ${JSON.stringify(result.result, null, 2)}`);
+        setTestResult(`✅ Test successful! Input: "${testInput}" → Output: ${JSON.stringify(result.result, null, 2)}`);
       } else {
         setTestResult(`❌ Test failed: ${result.message || result.error || 'Unknown error'}`);
       }
       setShowTestNotification(true);
       
-      // Auto-hide notification after 8 seconds
+      // Auto-hide notification after 10 seconds
       setTimeout(() => {
         setShowTestNotification(false);
-      }, 8000);
+      }, 10000);
     } catch (err) {
       setTestResult(`❌ Test error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setShowTestNotification(true);
       
       setTimeout(() => {
         setShowTestNotification(false);
-      }, 8000);
+      }, 10000);
     } finally {
       setIsTesting(false);
     }
@@ -330,6 +334,12 @@ export default function ExecuteAgentPage() {
 
   const handleDeleteAgent = async () => {
     if (!agent) return;
+
+    // Check if confirmation text matches agent name
+    if (deleteConfirmText !== agent.name) {
+      setError(`Please type "${agent.name}" to confirm deletion`);
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -350,6 +360,7 @@ export default function ExecuteAgentPage() {
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
+      setDeleteConfirmText("");
     }
   };
 
@@ -580,16 +591,60 @@ export default function ExecuteAgentPage() {
                         {isTesting ? 'Testing...' : 'Test Agent'}
                       </button>
                       <button
-                        onClick={() => setShowDeleteConfirm(true)}
+                        onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
                         disabled={isDeleting}
                         className="w-full px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         <span>🗑️</span>
-                        {isDeleting ? 'Deleting...' : 'Delete Agent'}
+                        {isDeleting ? 'Deleting...' : showDeleteConfirm ? 'Cancel Delete' : 'Delete Agent'}
                       </button>
                     </div>
                   )}
                 </div>
+
+                {/* Inline Delete Confirmation */}
+                {showDeleteConfirm && canEdit() && (
+                  <div className="border-t border-red-200 pt-4 mt-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-red-800 mb-2">⚠️ Delete Agent</h4>
+                      <p className="text-sm text-red-700 mb-3">
+                        This will permanently delete <strong>&quot;{agent?.name}&quot;</strong> and all associated data. This action cannot be undone.
+                      </p>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-red-700 mb-1">
+                            Type the agent name to confirm deletion:
+                          </label>
+                          <input
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder={`Type "${agent?.name}" here`}
+                            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={handleDeleteAgent}
+                            disabled={isDeleting || deleteConfirmText !== agent?.name}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                          >
+                            {isDeleting ? 'Deleting...' : 'Delete Agent'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowDeleteConfirm(false);
+                              setDeleteConfirmText("");
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {(exampleInput || agent.exampleInput) && (
                   <div className="border-t border-gray-200 pt-4">
@@ -821,48 +876,6 @@ export default function ExecuteAgentPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">
-                Delete Agent
-              </h3>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-gray-600">
-                Are you sure you want to delete <strong>&quot;{agent?.name}&quot;</strong>? This action cannot be undone.
-              </p>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAgent}
-                  disabled={isDeleting}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete Agent'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
