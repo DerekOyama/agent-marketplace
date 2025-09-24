@@ -135,7 +135,8 @@ export async function POST(req: NextRequest) {
       result: result,
       agent: {
         id: agent.id,
-        name: agent.name
+        name: agent.name,
+        pricePerExecutionCents: executionCostCents
       }
     });
 
