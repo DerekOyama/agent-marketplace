@@ -76,17 +76,20 @@ export default function Home() {
         setAgents(data.agents);
 
         // Background upgrade to full stats without blocking UI
-        try {
-          const fullRes = await fetch(`/api/agents?mode=full${debugParam}${deletedParam}${filterParam}`);
-          if (fullRes.ok) {
-            const fullText = await fullRes.text();
-            const fullData = fullText ? JSON.parse(fullText) : {};
-            if (fullData.agents) {
-              console.log("Setting full stats agents:", fullData.agents.map((a: Agent) => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden, ownerId: a.ownerId })));
-              setAgents(fullData.agents);
+        // Only do this if we're not in My Agents mode with no results
+        if (!(showMyAgents && data.agents.length === 0)) {
+          try {
+            const fullRes = await fetch(`/api/agents?mode=full${debugParam}${deletedParam}${filterParam}`);
+            if (fullRes.ok) {
+              const fullText = await fullRes.text();
+              const fullData = fullText ? JSON.parse(fullText) : {};
+              if (fullData.agents) {
+                console.log("Setting full stats agents:", fullData.agents.map((a: Agent) => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden, ownerId: a.ownerId })));
+                setAgents(fullData.agents);
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        }
       } else {
         // No agents found - set empty array immediately
         console.log("No agents found, setting empty array");
@@ -168,7 +171,12 @@ export default function Home() {
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [fetchAgents]);
+  }, []); // Remove fetchAgents dependency to prevent circular dependency
+
+  // Track showMyAgents changes
+  useEffect(() => {
+    console.log("showMyAgents state changed to:", showMyAgents);
+  }, [showMyAgents]);
 
   // Refetch when showDeletedAgents, filterBy, or showMyAgents changes
   useEffect(() => {
@@ -689,6 +697,7 @@ export default function Home() {
                     onChange={(e) => {
                       console.log("My Agents toggle changed to:", e.target.checked);
                       setShowMyAgents(e.target.checked);
+                      console.log("showMyAgents state after setState:", e.target.checked);
                       // Force refetch immediately
                       setTimeout(() => fetchAgents(), 100);
                     }}
