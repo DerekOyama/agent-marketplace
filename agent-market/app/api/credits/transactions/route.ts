@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 		return NextResponse.json({
 			currentBalance: user.creditBalanceCents,
-			transactions: transactions.map(t => ({
+                  transactions: transactions.map((t: any) => ({
 				id: t.id,
 				amountCents: t.amountCents,
 				type: t.type,

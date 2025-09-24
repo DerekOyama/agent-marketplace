@@ -51,35 +51,35 @@ export async function GET(
       case 'executions':
         aggregatedData = {
           executions: {
-            total: metrics.reduce((sum, m) => sum + m.totalExecutions, 0),
-            successful: metrics.reduce((sum, m) => sum + m.successfulExecutions, 0),
-            failed: metrics.reduce((sum, m) => sum + m.failedExecutions, 0),
-            timeout: metrics.reduce((sum, m) => sum + m.timeoutExecutions, 0),
-            error: metrics.reduce((sum, m) => sum + m.errorExecutions, 0)
+            total: metrics.reduce((sum: number, m: any) => sum + m.totalExecutions, 0),
+            successful: metrics.reduce((sum: number, m: any) => sum + m.successfulExecutions, 0),
+            failed: metrics.reduce((sum: number, m: any) => sum + m.failedExecutions, 0),
+            timeout: metrics.reduce((sum: number, m: any) => sum + m.timeoutExecutions, 0),
+            error: metrics.reduce((sum: number, m: any) => sum + m.errorExecutions, 0)
           },
           successRate: metrics.length > 0 ? 
-            Math.round((metrics.reduce((sum, m) => sum + m.successfulExecutions, 0) / 
-                       metrics.reduce((sum, m) => sum + m.totalExecutions, 0)) * 100) / 100 : 0
+            Math.round((metrics.reduce((sum: number, m: any) => sum + m.successfulExecutions, 0) / 
+                       metrics.reduce((sum: number, m: any) => sum + m.totalExecutions, 0)) * 100) / 100 : 0
         };
         break;
 
       case 'performance':
-        const durations = metrics.filter(m => m.avgDuration !== null).map(m => m.avgDuration!);
+        const durations = metrics.filter((m: any) => m.avgDuration !== null).map((m: any) => m.avgDuration!);
         aggregatedData = {
           performance: {
             avgDuration: durations.length > 0 ? 
-              Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length) : 0,
-            minDuration: Math.min(...metrics.map(m => m.minDuration || 0).filter(d => d > 0)),
-            maxDuration: Math.max(...metrics.map(m => m.maxDuration || 0)),
-            p95Duration: Math.round(metrics.reduce((sum, m) => sum + (m.p95Duration || 0), 0) / metrics.length),
-            p99Duration: Math.round(metrics.reduce((sum, m) => sum + (m.p99Duration || 0), 0) / metrics.length)
+              Math.round(durations.reduce((sum: number, d: number) => sum + d, 0) / durations.length) : 0,
+            minDuration: Math.min(...metrics.map((m: any) => m.minDuration || 0).filter((d: number) => d > 0)),
+            maxDuration: Math.max(...metrics.map((m: any) => m.maxDuration || 0)),
+            p95Duration: Math.round(metrics.reduce((sum: number, m: any) => sum + (m.p95Duration || 0), 0) / metrics.length),
+            p99Duration: Math.round(metrics.reduce((sum: number, m: any) => sum + (m.p99Duration || 0), 0) / metrics.length)
           }
         };
         break;
 
       case 'errors':
         const errorCounts: Record<string, number> = {};
-        metrics.forEach(m => {
+        metrics.forEach((m: any) => {
           if (m.errorCounts) {
             Object.entries(m.errorCounts as Record<string, number>).forEach(([error, count]) => {
               errorCounts[error] = (errorCounts[error] || 0) + count;
@@ -94,10 +94,10 @@ export async function GET(
       case 'users':
         aggregatedData = {
           users: {
-            unique: Math.max(...metrics.map(m => m.uniqueUsers)),
-            totalCreditsConsumed: metrics.reduce((sum, m) => sum + m.totalCreditsConsumed, 0),
+            unique: Math.max(...metrics.map((m: any) => m.uniqueUsers)),
+            totalCreditsConsumed: metrics.reduce((sum: number, m: any) => sum + m.totalCreditsConsumed, 0),
             avgCreditsPerExecution: metrics.length > 0 ?
-              Math.round(metrics.reduce((sum, m) => sum + (m.avgCreditsPerExecution || 0), 0) / metrics.length) : 0
+              Math.round(metrics.reduce((sum: number, m: any) => sum + (m.avgCreditsPerExecution || 0), 0) / metrics.length) : 0
           }
         };
         break;
@@ -115,7 +115,7 @@ export async function GET(
       period,
       metric,
       data: aggregatedData,
-      timestamps: metrics.map(m => m.date.toISOString()),
+      timestamps: metrics.map((m: any) => m.date.toISOString()),
       recordCount: metrics.length
     });
 

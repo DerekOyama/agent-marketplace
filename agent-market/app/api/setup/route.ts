@@ -211,7 +211,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: `Found ${agentCount} agents in database`,
-      agents: agents.map(agent => ({
+      agents: agents.map((agent: any) => ({
         id: agent.id,
         name: agent.name,
         type: agent.type,

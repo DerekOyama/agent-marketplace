@@ -23,7 +23,7 @@ export class CreditManager {
     error?: string;
   }> {
     try {
-      return await prisma.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx: any) => {
         // Get current user and lock the row
         const user = await tx.user.findUnique({
           where: { id: input.userId },
@@ -167,7 +167,7 @@ export class CreditManager {
     error?: string;
   }> {
     try {
-      return await prisma.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx: any) => {
         // Get the purchase record
         const purchase = await tx.creditPurchase.findUnique({
           where: { id: creditPurchaseId },

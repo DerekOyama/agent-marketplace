@@ -31,7 +31,7 @@ interface MockTransaction {
   createdAt: Date;
 }
 
-let prisma: unknown;
+let prisma: any;
 
 // Mock data for multiple users
 const mockUsers: MockUser[] = [
@@ -123,6 +123,89 @@ const createMockPrisma = () => ({
           balanceAfterCents: 30900,
           createdAt: new Date('2025-09-23T16:54:51.446Z'),
           agent: { name: 'aa' }
+        }
+      ];
+    }
+  },
+  agent: {
+    findUnique: async ({ where }: { where: { id: string } }) => {
+      return {
+        id: where.id,
+        name: 'Mock Agent',
+        description: 'Mock agent for testing',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    },
+    findMany: async () => [
+      {
+        id: 'agent1',
+        name: 'Mock Agent 1',
+        description: 'Mock agent for testing',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  },
+  agentLog: {
+    findMany: async ({ where, orderBy, take, skip }: { 
+      where: Record<string, unknown>; 
+      orderBy?: Record<string, string>; 
+      take?: number; 
+      skip?: number; 
+    }) => {
+      return [
+        {
+          id: 'log1',
+          executionId: 'exec_1758646489213_la5agmb5r',
+          agentId: where.agentId as string,
+          category: 'execution',
+          level: 'info',
+          message: 'Mock log message',
+          context: {},
+          metadata: {},
+          timestamp: new Date()
+        }
+      ];
+    },
+    count: async ({ where }: { where: Record<string, unknown> }) => 1,
+    groupBy: async ({ by, _count, where }: { 
+      by: string[]; 
+      _count: Record<string, boolean>; 
+      where: Record<string, unknown>; 
+    }) => [
+      {
+        category: 'execution',
+        level: 'info',
+        _count: { category: 1 }
+      }
+    ]
+  },
+  agentMetrics: {
+    findMany: async ({ where, orderBy }: { 
+      where: Record<string, unknown>; 
+      orderBy?: Record<string, string>; 
+    }) => {
+      return [
+        {
+          id: 'metrics1',
+          agentId: where.agentId as string,
+          date: new Date(),
+          hour: null,
+          totalExecutions: 10,
+          successfulExecutions: 8,
+          failedExecutions: 1,
+          timeoutExecutions: 1,
+          errorExecutions: 0,
+          avgDuration: 1500,
+          minDuration: 800,
+          maxDuration: 3000,
+          p95Duration: 2800,
+          p99Duration: 2950,
+          uniqueUsers: 5,
+          totalCreditsConsumed: 500,
+          avgCreditsPerExecution: 50,
+          errorCounts: { 'timeout': 1 }
         }
       ];
     }

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Calculate balance from transactions
-    const calculatedBalance = user.creditTransactions.reduce((sum, tx) => sum + tx.amountCents, 0);
+    const calculatedBalance = user.creditTransactions.reduce((sum: number, tx: any) => sum + tx.amountCents, 0);
     const balanceConsistent = user.creditBalanceCents === calculatedBalance;
 
     // Get recent executions with balance data
@@ -64,14 +64,14 @@ export async function GET(req: NextRequest) {
         calculatedBalance,
         balanceConsistent
       },
-      recentTransactions: user.creditTransactions.slice(0, 5).map(tx => ({
+      recentTransactions: user.creditTransactions.slice(0, 5).map((tx: any) => ({
         description: tx.description,
         amount: tx.amountCents,
         balanceAfter: tx.balanceAfterCents,
         type: tx.type,
         createdAt: tx.createdAt
       })),
-      recentExecutions: recentExecutions.map(exec => ({
+      recentExecutions: recentExecutions.map((exec: any) => ({
         executionId: exec.executionId,
         agentName: exec.agent.name,
         cost: exec.creditsConsumed,

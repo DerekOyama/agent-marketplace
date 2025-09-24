@@ -159,12 +159,12 @@ export class PayoutManager {
       orderBy: { lastEarningAt: 'desc' }
     });
 
-    const totalEarningsCents = earnings.reduce((sum, e) => sum + e.totalEarningsCents, 0);
-    const pendingEarningsCents = earnings.reduce((sum, e) => sum + e.pendingEarningsCents, 0);
-    const paidOutCents = earnings.reduce((sum, e) => sum + e.paidOutCents, 0);
-    const totalExecutions = earnings.reduce((sum, e) => sum + e.totalExecutions, 0);
+    const totalEarningsCents = earnings.reduce((sum: number, e: any) => sum + e.totalEarningsCents, 0);
+    const pendingEarningsCents = earnings.reduce((sum: number, e: any) => sum + e.pendingEarningsCents, 0);
+    const paidOutCents = earnings.reduce((sum: number, e: any) => sum + e.paidOutCents, 0);
+    const totalExecutions = earnings.reduce((sum: number, e: any) => sum + e.totalExecutions, 0);
 
-    const agentBreakdown = earnings.map(e => ({
+    const agentBreakdown = earnings.map((e: any) => ({
       agentId: e.agentId,
       agentName: e.agent.name,
       totalEarningsCents: e.totalEarningsCents,
@@ -358,11 +358,11 @@ export class PayoutManager {
       });
 
       const totalExecutions = executions.length;
-      const successfulExecutions = executions.filter(e => e.status === 'success').length;
+      const successfulExecutions = executions.filter((e: any) => e.status === 'success').length;
       const failedExecutions = totalExecutions - successfulExecutions;
       
       // Calculate revenue breakdown
-      const totalRevenueCents = executions.reduce((sum, e) => sum + e.creditsConsumed, 0);
+      const totalRevenueCents = executions.reduce((sum: number, e: any) => sum + e.creditsConsumed, 0);
       const { platformFeeCents, creatorEarningsCents } = this.calculateRevenueSplit(totalRevenueCents);
       
       const averageExecutionCost = totalExecutions > 0 ? totalRevenueCents / totalExecutions : 0;
@@ -520,8 +520,8 @@ export class PayoutManager {
       }
     });
 
-    const totalCreatorEarningsCents = earnings.reduce((sum, e) => sum + e.totalEarningsCents, 0);
-    const totalExecutions = earnings.reduce((sum, e) => sum + e.totalExecutions, 0);
+    const totalCreatorEarningsCents = earnings.reduce((sum: number, e: any) => sum + e.totalEarningsCents, 0);
+    const totalExecutions = earnings.reduce((sum: number, e: any) => sum + e.totalExecutions, 0);
     
     // Calculate platform revenue (10% of total transaction value)
     // Since creators get 90%, platform gets 10%

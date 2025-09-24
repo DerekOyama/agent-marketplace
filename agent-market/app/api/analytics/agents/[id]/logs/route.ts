@@ -66,7 +66,7 @@ export async function GET(
     return NextResponse.json({
       agentId,
       agentName: agent.name,
-      logs: logs.map(log => ({
+      logs: logs.map((log: any) => ({
         id: log.id,
         executionId: log.executionId,
         category: log.category,
@@ -82,7 +82,7 @@ export async function GET(
         offset,
         hasMore: offset + limit < total
       },
-      statistics: stats.map(stat => ({
+      statistics: stats.map((stat: any) => ({
         category: stat.category,
         level: stat.level,
         count: stat._count.category
