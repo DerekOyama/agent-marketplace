@@ -8,63 +8,63 @@ datasource db {
 }
 
 model User {
-  id                 String                 @id @default(cuid())
-  email              String                 @unique
-  creditBalanceCents Int                    @default(1000)
-  stripeCustomerId   String?
-  stripeConnectId    String?
+  id                  String                 @id @default(cuid())
+  email               String                 @unique
+  creditBalanceCents  Int                    @default(1000)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  stripeConnectId     String?
   stripeConnectStatus String?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  executions         AgentExecution[]
-  logs               AgentLog[]
-  mandates           Mandate[]
-  transactions       Transaction[]
-  agentInteractions  UserAgentInteraction[]
-  creditTransactions CreditTransaction[]
-  creditPurchases    CreditPurchase[]
-  agents             Agent[]
-  agentRatings       AgentRating[]
+  stripeCustomerId    String?
+  agents              Agent[]
+  executions          AgentExecution[]
+  logs                AgentLog[]
+  agentRatings        AgentRating[]
+  creditPurchases     CreditPurchase[]
+  creditTransactions  CreditTransaction[]
+  mandates            Mandate[]
+  transactions        Transaction[]
+  agentInteractions   UserAgentInteraction[]
 }
 
 model Agent {
-  id               String                 @id @default(cuid())
-  name             String
-  description      String?
-  runUrl           String
-  quoteUrl         String
-  token            String
-  type             String                 @default("legacy")
-  n8nWorkflowId    String?
-  n8nInstanceUrl   String?
-  webhookUrl       String?
-  triggerType      String?
-  isActive         Boolean                @default(true)
-  isHidden         Boolean                @default(false)
-  isDeleted        Boolean                @default(false)
-  metadata         Json?
-  pricing          Json?
-  stats            Json?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  lastExecutedAt   DateTime?
-  totalExecutions  Int                    @default(0)
-  avgRating        Float?
-  totalUsers       Int                    @default(0)
-  inputSchema      Json?
-  outputSchema     Json?
-  inputRequirements String?               // Human-readable input description for LLM
-  pricePerExecutionCents Int?             // Price in cents per execution
-  exampleInput String?                    // Example input for testing and display
-  exampleOutput String?                   // Example output for display
-  executions       AgentExecution[]
-  logs             AgentLog[]
-  metrics          AgentMetrics[]
-  transactions     Transaction[]
-  userInteractions UserAgentInteraction[]
-  ratings          AgentRating[]
-  ownerId          String?
-  owner            User?                  @relation(fields: [ownerId], references: [id])
+  id                     String                 @id @default(cuid())
+  name                   String
+  description            String?
+  runUrl                 String
+  quoteUrl               String
+  token                  String
+  type                   String                 @default("legacy")
+  n8nWorkflowId          String?
+  n8nInstanceUrl         String?
+  webhookUrl             String?
+  triggerType            String?
+  isActive               Boolean                @default(true)
+  isHidden               Boolean                @default(false)
+  isDeleted              Boolean                @default(false)
+  metadata               Json?
+  pricing                Json?
+  stats                  Json?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  lastExecutedAt         DateTime?
+  totalExecutions        Int                    @default(0)
+  avgRating              Float?
+  totalUsers             Int                    @default(0)
+  inputSchema            Json?
+  outputSchema           Json?
+  ownerId                String?
+  inputRequirements      String?
+  pricePerExecutionCents Int?
+  exampleInput           String?
+  exampleOutput          String?
+  owner                  User?                  @relation(fields: [ownerId], references: [id])
+  executions             AgentExecution[]
+  logs                   AgentLog[]
+  metrics                AgentMetrics[]
+  ratings                AgentRating[]
+  transactions           Transaction[]
+  userInteractions       UserAgentInteraction[]
 
   @@index([ownerId])
 }
@@ -80,22 +80,22 @@ model Mandate {
 }
 
 model Transaction {
-  id          String     @id @default(cuid())
-  userId      String
-  agentId     String
-  amountCents Int
-  currency    String     @default("USD")
-  status      String     @default("pending")
-  stripePi    String?
-  requestJson Json?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  receiptJson Json?
-  platformFeeCents Int      @default(0)
-  sellerEarningsCents Int   @default(0)
-  logs        AuditLog[]
-  agent       Agent      @relation(fields: [agentId], references: [id])
-  user        User       @relation(fields: [userId], references: [id])
+  id                  String     @id @default(cuid())
+  userId              String
+  agentId             String
+  amountCents         Int
+  currency            String     @default("USD")
+  status              String     @default("pending")
+  stripePi            String?
+  requestJson         Json?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  receiptJson         Json?
+  platformFeeCents    Int        @default(0)
+  sellerEarningsCents Int        @default(0)
+  logs                AuditLog[]
+  agent               Agent      @relation(fields: [agentId], references: [id])
+  user                User       @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
@@ -109,35 +109,35 @@ model AuditLog {
 }
 
 model AgentExecution {
-  id              String    @id @default(cuid())
-  agentId         String
-  userId          String
-  executionId     String    @unique
-  status          String
-  duration        Int
-  creditsConsumed Int
-  httpStatus      Int?
-  errorCode       String?
-  errorMessage    String?
-  inputSize       Int?
-  outputSize      Int?
-  inputType       String?
-  outputType      String?
-  responseTime    Int?
-  processingTime  Int?
-  queueTime       Int?
-  sessionId       String?
-  userAgent       String?
-  ipAddress       String?
-  inputData       Json?
-  outputData      Json?
-  balanceBeforeCents Int?
+  id                 String    @id @default(cuid())
+  agentId            String
+  userId             String
+  executionId        String    @unique
+  status             String
+  duration           Int
+  creditsConsumed    Int
+  httpStatus         Int?
+  errorCode          String?
+  errorMessage       String?
+  inputSize          Int?
+  outputSize         Int?
+  inputType          String?
+  outputType         String?
+  responseTime       Int?
+  processingTime     Int?
+  queueTime          Int?
+  sessionId          String?
+  userAgent          String?
+  ipAddress          String?
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  inputData          Json?
+  outputData         Json?
   balanceAfterCents  Int?
-  startedAt       DateTime  @default(now())
-  completedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  agent           Agent     @relation(fields: [agentId], references: [id])
-  user            User      @relation(fields: [userId], references: [id])
+  balanceBeforeCents Int?
+  agent              Agent     @relation(fields: [agentId], references: [id])
+  user               User      @relation(fields: [userId], references: [id])
 
   @@index([agentId, createdAt])
   @@index([userId, createdAt])
@@ -217,8 +217,8 @@ model UserAgentInteraction {
 }
 
 model RequestLog {
-  id             String    @id @default(cuid())
-  traceId        String    @unique
+  id             String   @id @default(cuid())
+  traceId        String   @unique
   method         String
   url            String
   path           String
@@ -235,9 +235,7 @@ model RequestLog {
   duration       Int
   errorCode      String?
   errorMessage   String?
-  timestamp      DateTime  @default(now())
-  
-  // Connect to other tables for better analytics
+  timestamp      DateTime @default(now())
   agentId        String?
   executionId    String?
 
@@ -250,18 +248,17 @@ model RequestLog {
   @@index([executionId])
 }
 
-// Audit Trail Tables
 model AgentAuditLog {
-  id          String   @id @default(cuid())
-  agentId     String
-  field       String   // Field that was changed (e.g., "name", "pricing", "metadata")
-  oldValue    Json?    // Previous value
-  newValue    Json?    // New value
-  changedBy   String?  // User ID who made the change
-  changeType  String   // "create", "update", "delete"
-  timestamp   DateTime @default(now())
-  reason      String?  // Optional reason for the change
-  metadata    Json?    // Additional context
+  id         String   @id @default(cuid())
+  agentId    String
+  field      String
+  oldValue   Json?
+  newValue   Json?
+  changedBy  String?
+  changeType String
+  timestamp  DateTime @default(now())
+  reason     String?
+  metadata   Json?
 
   @@index([agentId, timestamp])
   @@index([changedBy, timestamp])
@@ -270,16 +267,16 @@ model AgentAuditLog {
 }
 
 model UserAuditLog {
-  id          String   @id @default(cuid())
-  userId      String
-  field       String   // Field that was changed (e.g., "email", "creditBalanceCents")
-  oldValue    Json?    // Previous value
-  newValue    Json?    // New value
-  changedBy   String?  // User ID who made the change (null for self-changes)
-  changeType  String   // "create", "update", "delete"
-  timestamp   DateTime @default(now())
-  reason      String?  // Optional reason for the change
-  metadata    Json?    // Additional context
+  id         String   @id @default(cuid())
+  userId     String
+  field      String
+  oldValue   Json?
+  newValue   Json?
+  changedBy  String?
+  changeType String
+  timestamp  DateTime @default(now())
+  reason     String?
+  metadata   Json?
 
   @@index([userId, timestamp])
   @@index([changedBy, timestamp])
@@ -288,16 +285,16 @@ model UserAuditLog {
 }
 
 model MandateAuditLog {
-  id          String   @id @default(cuid())
-  mandateId   String
-  field       String   // Field that was changed (e.g., "status", "rulesJson")
-  oldValue    Json?    // Previous value
-  newValue    Json?    // New value
-  changedBy   String   // User ID who made the change
-  changeType  String   // "create", "update", "delete"
-  timestamp   DateTime @default(now())
-  reason      String?  // Optional reason for the change
-  metadata    Json?    // Additional context
+  id         String   @id @default(cuid())
+  mandateId  String
+  field      String
+  oldValue   Json?
+  newValue   Json?
+  changedBy  String
+  changeType String
+  timestamp  DateTime @default(now())
+  reason     String?
+  metadata   Json?
 
   @@index([mandateId, timestamp])
   @@index([changedBy, timestamp])
@@ -305,24 +302,23 @@ model MandateAuditLog {
   @@index([timestamp])
 }
 
-// System Monitoring Tables
 model SystemErrors {
-  id           String   @id @default(cuid())
-  errorCode    String   // Standardized error code
-  errorType    String   // "validation", "business", "system", "external"
-  severity     String   // "low", "medium", "high", "critical"
-  component    String   // Component where error occurred (e.g., "api", "agent", "payment")
-  agentId      String?
-  userId       String?
-  executionId  String?
-  requestId    String?  // RequestLog traceId
-  message      String
-  details      Json?    // Additional error details
-  stackTrace   String?  // Stack trace for debugging
-  resolved     Boolean  @default(false)
-  resolvedBy   String?  // User ID who resolved the error
-  resolvedAt   DateTime?
-  timestamp    DateTime @default(now())
+  id          String    @id @default(cuid())
+  errorCode   String
+  errorType   String
+  severity    String
+  component   String
+  agentId     String?
+  userId      String?
+  executionId String?
+  requestId   String?
+  message     String
+  details     Json?
+  stackTrace  String?
+  resolved    Boolean   @default(false)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  timestamp   DateTime  @default(now())
 
   @@index([errorCode, timestamp])
   @@index([errorType, timestamp])
@@ -335,36 +331,34 @@ model SystemErrors {
 }
 
 model SystemMetrics {
-  id           String   @id @default(cuid())
-  metric       String   // Metric name (e.g., "response_time", "error_rate", "active_users")
-  value        Float    // Metric value
-  component    String   // Component being measured
-  unit         String?  // Unit of measurement (e.g., "ms", "count", "percentage")
-  tags         Json?    // Additional tags for filtering/grouping
-  timestamp    DateTime @default(now())
+  id        String   @id @default(cuid())
+  metric    String
+  value     Float
+  component String
+  unit      String?
+  tags      Json?
+  timestamp DateTime @default(now())
 
   @@index([metric, timestamp])
   @@index([component, timestamp])
   @@index([timestamp])
 }
 
-// Credit Purchase - Tracks Stripe payments for credit top-ups
 model CreditPurchase {
-  id                String   @id @default(cuid())
-  userId            String
-  amountCents       Int      // Amount paid in cents
-  creditsPurchased  Int      // Number of credits added to account
-  currency          String   @default("usd")
-  stripePaymentIntentId String? // Stripe Payment Intent ID
-  stripeCheckoutSessionId String? // Stripe Checkout Session ID
-  status            String   @default("pending") // pending, completed, failed, refunded
-  metadata          Json?    // Additional purchase metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  completedAt       DateTime?
-  
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  creditTransactions CreditTransaction[]
+  id                      String              @id @default(cuid())
+  userId                  String
+  amountCents             Int
+  creditsPurchased        Int
+  currency                String              @default("usd")
+  stripePaymentIntentId   String?
+  stripeCheckoutSessionId String?
+  status                  String              @default("pending")
+  metadata                Json?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  completedAt             DateTime?
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditTransactions      CreditTransaction[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
@@ -372,23 +366,21 @@ model CreditPurchase {
   @@index([stripeCheckoutSessionId])
 }
 
-// Credit Transaction - Tracks all credit movements (purchases, usage, refunds)
 model CreditTransaction {
-  id                String   @id @default(cuid())
-  userId            String
-  amountCents       Int      // Positive for credits added, negative for credits used
-  type              String   // purchase, usage, refund, bonus, adjustment
-  description       String   // Human-readable description
-  referenceId       String?  // ID of related entity (agent execution, purchase, etc.)
-  referenceType     String?  // Type of reference (execution, purchase, etc.)
-  balanceBeforeCents Int     // User's balance before this transaction
-  balanceAfterCents  Int     // User's balance after this transaction
-  metadata          Json?    // Additional transaction metadata
-  createdAt         DateTime @default(now())
-  
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  creditPurchaseId  String?
-  creditPurchase    CreditPurchase? @relation(fields: [creditPurchaseId], references: [id])
+  id                 String          @id @default(cuid())
+  userId             String
+  amountCents        Int
+  type               String
+  description        String
+  referenceId        String?
+  referenceType      String?
+  balanceBeforeCents Int
+  balanceAfterCents  Int
+  metadata           Json?
+  createdAt          DateTime        @default(now())
+  creditPurchaseId   String?
+  creditPurchase     CreditPurchase? @relation(fields: [creditPurchaseId], references: [id])
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([type, createdAt])
@@ -399,12 +391,11 @@ model AgentRating {
   id        String   @id @default(cuid())
   agentId   String
   userId    String
-  rating    Int      // 1-5 star rating
+  rating    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
   agent     Agent    @relation(fields: [agentId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  
-  @@unique([agentId, userId]) // One rating per user per agent
+
+  @@unique([agentId, userId])
 }

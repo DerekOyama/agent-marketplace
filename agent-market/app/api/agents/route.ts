@@ -17,6 +17,9 @@ export async function GET(req: Request) {
       whereClause.isHidden = false;
     }
     
+    // Filter out deleted agents unless explicitly requested to show them
+    // When showDeleted is true, we include deleted agents
+    // When showDeleted is false or not specified, we exclude deleted agents
     if (!showDeleted) {
       whereClause.isDeleted = false;
     }
@@ -39,17 +42,11 @@ export async function GET(req: Request) {
         webhookUrl: true,
         triggerType: true,
         isActive: true,
-        isHidden: true,
-        isDeleted: true,
         metadata: true,
         pricing: true,
         stats: mode === 'full',
         inputSchema: true,
         outputSchema: true,
-        inputRequirements: true,
-        pricePerExecutionCents: true,
-        exampleInput: true,
-        exampleOutput: true,
         createdAt: true,
         updatedAt: true,
         totalExecutions: mode === 'full',
@@ -59,20 +56,35 @@ export async function GET(req: Request) {
       }
     });
     
-    console.log("Found agents:", agents.length);
-    console.log("Agent details:", agents.map(a => ({ id: a.id, name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
+    // Get isHidden and isDeleted values using raw query since they're not in TypeScript types yet
+    const agentIds = agents.map(a => a.id);
+    const rawAgentData = agentIds.length > 0 ? await prisma.$queryRaw`
+      SELECT id, "isHidden", "isDeleted" FROM "Agent" WHERE id = ANY(${agentIds})
+    ` as Array<{ id: string; isHidden: boolean; isDeleted: boolean }> : [];
+    
+    const hiddenDeletedMap = new Map(rawAgentData.map(a => [a.id, { isHidden: a.isHidden, isDeleted: a.isDeleted }]));
+    
+    // Add isHidden and isDeleted fields manually
+    const agentsWithFields = agents.map(agent => ({
+      ...agent,
+      isHidden: hiddenDeletedMap.get(agent.id)?.isHidden ?? false,
+      isDeleted: hiddenDeletedMap.get(agent.id)?.isDeleted ?? false
+    }));
+    
+    console.log("Found agents:", agentsWithFields.length);
+    console.log("Agent details:", agentsWithFields.map(a => ({ id: a.id, name: a.name, isActive: a.isActive, isHidden: a.isHidden, isDeleted: a.isDeleted })));
     
     if (mode === 'light') {
-      return NextResponse.json({ agents }, { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } });
+      return NextResponse.json({ agents: agentsWithFields }, { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } });
     }
 
     // Batch fetch all stats in one query for better performance (full mode)
-    const agentIds = agents.map(a => a.id);
+    const agentIdsForStats = agentsWithFields.map(a => a.id);
     
     // Get execution stats for all agents at once
     const executionStats = await prisma.agentExecution.groupBy({
       by: ['agentId'],
-      where: { agentId: { in: agentIds } },
+      where: { agentId: { in: agentIdsForStats } },
       _count: { id: true },
       _avg: { duration: true },
       _min: { duration: true },
@@ -82,14 +94,14 @@ export async function GET(req: Request) {
     // Get success/failure counts for all agents
     const successCounts = await prisma.agentExecution.groupBy({
       by: ['agentId'],
-      where: { agentId: { in: agentIds }, status: 'success' },
+      where: { agentId: { in: agentIdsForStats }, status: 'success' },
       _count: { id: true }
     });
     
     const failureCounts = await prisma.agentExecution.groupBy({
       by: ['agentId'],
       where: { 
-        agentId: { in: agentIds }, 
+        agentId: { in: agentIdsForStats }, 
         status: { in: ['failed', 'error', 'timeout'] } 
       },
       _count: { id: true }
@@ -98,7 +110,7 @@ export async function GET(req: Request) {
     // Get user interaction stats for all agents
     const userStats = await prisma.userAgentInteraction.groupBy({
       by: ['agentId'],
-      where: { agentId: { in: agentIds } },
+      where: { agentId: { in: agentIdsForStats } },
       _count: { id: true },
       _avg: { rating: true }
     });
@@ -110,7 +122,7 @@ export async function GET(req: Request) {
     const userMap = new Map(userStats.map(s => [s.agentId, s]));
     
     // Attach computed stats to each agent
-    const agentsWithStats = agents.map(agent => {
+    const agentsWithStats = agentsWithFields.map(agent => {
       const execStats = executionMap.get(agent.id);
       const successCount = successMap.get(agent.id) || 0;
       const failureCount = failureMap.get(agent.id) || 0;
