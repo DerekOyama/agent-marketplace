@@ -32,12 +32,22 @@ export async function GET(req: Request) {
     // Apply the same filtering logic as the original query
     let filteredAgents = allAgentsRaw;
     
-    if (!debugMode) {
-      filteredAgents = filteredAgents.filter(agent => !agent.isHidden);
-    }
-    
+    // Filter by deletion status
     if (!showDeleted) {
       filteredAgents = filteredAgents.filter(agent => !agent.isDeleted);
+    }
+    
+    // Filter by hidden status (but only if not in debug mode)
+    // Note: When showDeleted=true, we want to show deleted agents even if they're hidden
+    if (!debugMode) {
+      filteredAgents = filteredAgents.filter(agent => {
+        // If showDeleted=true and agent is deleted, show it even if hidden
+        if (showDeleted && agent.isDeleted) {
+          return true;
+        }
+        // Otherwise, respect the hidden filter
+        return !agent.isHidden;
+      });
     }
     
     // Convert to the expected format
