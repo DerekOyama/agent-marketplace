@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAdmin } from "../../../lib/use-admin";
 import Link from "next/link";
 
 interface PayoutConfig {
