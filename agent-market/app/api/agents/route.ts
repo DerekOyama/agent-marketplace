@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     
     // Get all agent data including isHidden and isDeleted using raw query
     // We need to query all agents (not just the filtered ones) to get the correct isDeleted values
-    const allAgentsRaw = await prisma.$queryRaw`
+    const allAgentsRaw = await (prisma as any).$queryRaw`
       SELECT id, name, description, "runUrl", "quoteUrl", token, type, "n8nWorkflowId", 
              "n8nInstanceUrl", "webhookUrl", "triggerType", "isActive", "isHidden", "isDeleted",
              metadata, pricing, "inputSchema", "outputSchema", "createdAt", "updatedAt",
@@ -100,7 +100,7 @@ export async function GET(req: Request) {
     const agentIdsForStats = agentsWithFields.map(a => a.id);
     
     // Get execution stats for all agents at once
-    const executionStats = await prisma.agentExecution.groupBy({
+    const executionStats = await (prisma as any).agentExecution.groupBy({
       by: ['agentId'],
       where: { agentId: { in: agentIdsForStats } },
       _count: { id: true },
@@ -110,13 +110,13 @@ export async function GET(req: Request) {
     });
     
     // Get success/failure counts for all agents
-    const successCounts = await prisma.agentExecution.groupBy({
+    const successCounts = await (prisma as any).agentExecution.groupBy({
       by: ['agentId'],
       where: { agentId: { in: agentIdsForStats }, status: 'success' },
       _count: { id: true }
     });
     
-    const failureCounts = await prisma.agentExecution.groupBy({
+    const failureCounts = await (prisma as any).agentExecution.groupBy({
       by: ['agentId'],
       where: { 
         agentId: { in: agentIdsForStats }, 
@@ -126,7 +126,7 @@ export async function GET(req: Request) {
     });
     
     // Get user interaction stats for all agents
-    const userStats = await prisma.userAgentInteraction.groupBy({
+    const userStats = await (prisma as any).userAgentInteraction.groupBy({
       by: ['agentId'],
       where: { agentId: { in: agentIdsForStats } },
       _count: { id: true },

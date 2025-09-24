@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create a new agent based on the webhook
-    const agent = await prisma.agent.create({
+    const agent = await (prisma as any).agent.create({
       data: {
         name: name.trim(),
         description: `AI Agent: ${inputRequirements.trim()}`,

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create pending credit purchase record
-    const creditPurchase = await prisma.creditPurchase.create({
+    const creditPurchase = await (prisma as any).creditPurchase.create({
       data: {
         userId,
         amountCents,

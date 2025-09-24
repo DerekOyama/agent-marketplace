@@ -156,5 +156,5 @@ try {
 }
 
 // Export prisma with proper typing for API routes
-export { prisma as default };
-export const prismaClient = prisma as any;
+export { prisma };
+export default prisma;

@@ -6,12 +6,12 @@ export async function GET() {
     const userId = "demo-user";
     
     // Get or create user
-    let user = await prisma.user.findUnique({
+    let user = await (prisma as any).user.findUnique({
       where: { id: userId }
     });
 
     if (!user) {
-      user = await prisma.user.create({
+      user = await (prisma as any).user.create({
         data: {
           id: userId,
           email: "demo@example.com",

@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const executions = await prisma.agentExecution.findMany({
+    const executions = await (prisma as any).agentExecution.findMany({
       where: { userId },
       include: {
         agent: {

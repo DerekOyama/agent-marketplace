@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     console.log('👥 Checking all user accounts...');
 
     // Get all users
-    const users = await prisma.user.findMany({
+    const users = await (prisma as any).user.findMany({
       select: {
         id: true,
         email: true,

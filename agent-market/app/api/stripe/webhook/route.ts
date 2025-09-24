@@ -60,13 +60,13 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   
   try {
     // Find transaction by Stripe payment intent ID
-    const transaction = await prisma.transaction.findFirst({
+    const transaction = await (prisma as any).transaction.findFirst({
       where: { stripePi: paymentIntent.id }
     });
 
     if (transaction) {
       // Update transaction status
-      await prisma.transaction.update({
+      await (prisma as any).transaction.update({
         where: { id: transaction.id },
         data: { 
           status: 'completed',
@@ -81,7 +81,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       });
 
       // Create audit log
-      await prisma.auditLog.create({
+      await (prisma as any).auditLog.create({
         data: {
           txId: transaction.id,
           actor: 'stripe_webhook',
@@ -106,13 +106,13 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   
   try {
     // Find transaction by Stripe payment intent ID
-    const transaction = await prisma.transaction.findFirst({
+    const transaction = await (prisma as any).transaction.findFirst({
       where: { stripePi: paymentIntent.id }
     });
 
     if (transaction) {
       // Update transaction status
-      await prisma.transaction.update({
+      await (prisma as any).transaction.update({
         where: { id: transaction.id },
         data: { 
           status: 'failed',
@@ -128,7 +128,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       });
 
       // Create audit log
-      await prisma.auditLog.create({
+      await (prisma as any).auditLog.create({
         data: {
           txId: transaction.id,
           actor: 'stripe_webhook',
@@ -165,7 +165,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     
     if (userId && purchaseType === "balance_topup" && amountCents > 0) {
       // Find the credit purchase record
-      let creditPurchase = await prisma.creditPurchase.findFirst({
+      let creditPurchase = await (prisma as any).creditPurchase.findFirst({
         where: {
           stripeCheckoutSessionId: session.id,
           status: "pending"
@@ -179,7 +179,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         
         console.log('Creating fallback credit purchase - amountCents:', finalAmountCents);
         
-        creditPurchase = await prisma.creditPurchase.create({
+        creditPurchase = await (prisma as any).creditPurchase.create({
           data: {
             userId,
             amountCents: finalAmountCents,

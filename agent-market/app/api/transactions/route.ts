@@ -32,14 +32,14 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if agent exists
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId }
     });
     if (!agent) {
       return NextResponse.json({ error: "agent_not_found" }, { status: 404 });
     }
     
-    const mandate = await prisma.mandate.findFirst({ 
+    const mandate = await (prisma as any).mandate.findFirst({ 
       where: { userId, status: "active" }
     });
     if (!mandate) {
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    const tx = await prisma.transaction.create({
+    const tx = await (prisma as any).transaction.create({
       data: { 
         userId, 
         agentId, 
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       }
     });
     
-    await prisma.auditLog.create({ 
+    await (prisma as any).auditLog.create({ 
       data: { 
         txId: tx.id, 
         actor: "marketplace", 

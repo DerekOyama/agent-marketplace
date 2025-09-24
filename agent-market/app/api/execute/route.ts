@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the agent
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId }
     });
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const executionCostCents = (agent as { pricePerExecutionCents?: number }).pricePerExecutionCents || 0;
     
     // Get user's current balance
-    const user = await prisma.user.findUnique({
+    const user = await (prisma as any).user.findUnique({
       where: { id: userId },
       select: { creditBalanceCents: true }
     });
@@ -108,14 +108,14 @@ export async function POST(req: NextRequest) {
 
     // Only deduct balance and save execution record after successful execution
     // Update user balance
-    await prisma.user.update({
+    await (prisma as any).user.update({
       where: { id: userId },
       data: { creditBalanceCents: balanceAfterCents }
     });
 
     // Save execution record
     const executionId = `exec_${Date.now()}`;
-    await prisma.agentExecution.create({
+    await (prisma as any).agentExecution.create({
       data: {
         agentId: agent.id,
         userId: userId,

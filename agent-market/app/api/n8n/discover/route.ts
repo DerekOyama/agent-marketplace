@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 		for (const agentData of discovery.agents) {
 			try {
 				// Check if agent already exists
-				const existingAgent = await prisma.agent.findFirst({
+				const existingAgent = await (prisma as any).agent.findFirst({
 					where: {
 						n8nWorkflowId: agentData.n8nWorkflowId,
 						n8nInstanceUrl: agentData.n8nInstanceUrl,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
 				if (existingAgent) {
 					// Update existing agent
-					const updatedAgent = await prisma.agent.update({
+					const updatedAgent = await (prisma as any).agent.update({
 						where: { id: existingAgent.id },
 						data: {
 							name: agentData.name,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 					registeredAgents.push(updatedAgent);
 				} else {
 					// Create new agent
-					const newAgent = await prisma.agent.create({
+					const newAgent = await (prisma as any).agent.create({
 						data: {
 							name: agentData.name!,
 							description: agentData.description,

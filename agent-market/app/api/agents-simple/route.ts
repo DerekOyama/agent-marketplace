@@ -5,7 +5,7 @@ export async function GET() {
   try {
     console.log('Agents API called');
     
-    const agents = await prisma.agent.findMany({
+    const agents = await (prisma as any).agent.findMany({
       orderBy: { createdAt: 'desc' },
       select: { 
         id: true, 

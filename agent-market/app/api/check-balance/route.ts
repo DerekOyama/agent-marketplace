@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     console.log('💰 Checking current balance for demo user...');
 
     // Get the demo user
-    const user = await prisma.user.findUnique({
+    const user = await (prisma as any).user.findUnique({
       where: { email: 'demo@example.com' },
       select: {
         id: true,
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const balanceConsistent = user.creditBalanceCents === calculatedBalance;
 
     // Get recent executions with balance data
-    const recentExecutions = await prisma.agentExecution.findMany({
+    const recentExecutions = await (prisma as any).agentExecution.findMany({
       where: {
         userId: user.id,
         status: 'success',

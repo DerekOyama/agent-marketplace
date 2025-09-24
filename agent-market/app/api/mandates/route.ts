@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
     
-    const mandate = await prisma.mandate.create({ 
+    const mandate = await (prisma as any).mandate.create({ 
       data: { 
         userId, 
         rulesJson: parsed.data.rules,

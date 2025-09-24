@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 // GET - Get user's current credit balance
 export const GET = ApiHandler.createGetHandler(async (req: NextRequest, userId: string) => {
-  const user = await prisma.user.findUnique({
+  const user = await (prisma as any).user.findUnique({
     where: { id: userId },
     select: { 
       id: true, 
@@ -35,7 +35,7 @@ export const POST = ApiHandler.createPostHandler(
   UpdateCreditsSchema,
   async (req: NextRequest, userId: string, data) => {
     // Get current user
-    const user = await prisma.user.findUnique({
+    const user = await (prisma as any).user.findUnique({
       where: { id: userId }
     });
 
@@ -53,7 +53,7 @@ export const POST = ApiHandler.createPostHandler(
       }
     }
 
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: { creditBalanceCents: newBalance },
       select: { 

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the agent from database first to get actual price
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId },
       select: {
         id: true,
@@ -337,7 +337,7 @@ export async function POST(req: NextRequest) {
       uptime: newTotal > 0 ? `${(99.5 + (Math.random() * 0.4)).toFixed(1)}%` : "99.9%"
     };
 
-    await prisma.agent.update({
+    await (prisma as any).agent.update({
       where: { id: agentId },
       data: {
         stats: updatedStats
@@ -451,7 +451,7 @@ export async function POST(req: NextRequest) {
 
     } else {
       // On failed execution, get current balance without deducting
-      const currentUser = await prisma.user.findUnique({
+      const currentUser = await (prisma as any).user.findUnique({
         where: { id: userId },
         select: { creditBalanceCents: true }
       });
@@ -567,7 +567,7 @@ export async function POST(req: NextRequest) {
     // Get current user balance for error response
     let currentBalance = 0;
     try {
-      const currentUser = await prisma.user.findUnique({
+      const currentUser = await (prisma as any).user.findUnique({
         where: { id: "demo-user" },
         select: { creditBalanceCents: true }
       });

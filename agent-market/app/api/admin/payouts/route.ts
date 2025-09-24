@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest } from "next/server";
 import { ApiResponse, withAuth } from "../../../../lib/api-utils";
 import { PayoutManager } from "../../../../lib/payout-manager";
-import { prisma } from "../../../../lib/prisma";
+import prisma from "../../../../lib/prisma";
 
 /**
  * GET /api/admin/payouts - Get platform revenue summary and all payouts
@@ -19,8 +20,8 @@ export const GET = withAuth(async (req: NextRequest) => {
     
     // Get total users and agents for additional context
     const [totalUsers, totalAgents] = await Promise.all([
-      prisma.user.count(),
-      prisma.agent.count()
+      (prisma as any).user.count(),
+      (prisma as any).agent.count()
     ]);
 
     return ApiResponse.success({
@@ -51,7 +52,7 @@ export const GET = withAuth(async (req: NextRequest) => {
 
     const whereClause = status ? { status } : {};
 
-    const payouts = await prisma.payout.findMany({
+    const payouts = await (prisma as any).payout.findMany({
       where: whereClause,
       include: {
         user: {
@@ -63,7 +64,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     });
 
     return ApiResponse.success({
-      payouts: payouts.map(payout => ({
+      payouts: payouts.map((payout: any) => ({
         id: payout.id,
         amountCents: payout.amountCents,
         currency: payout.currency,
@@ -126,7 +127,7 @@ export const PUT = withAuth(async (req: NextRequest) => {
       updateData.failureReason = failureReason;
     }
 
-    const payout = await prisma.payout.update({
+    const payout = await (prisma as any).payout.update({
       where: { id: payoutId },
       data: updateData,
       include: {

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     console.log('🔧 Fixing execution balance tracking...');
 
     // Get all executions for the demo user
-    const executions = await prisma.agentExecution.findMany({
+    const executions = await (prisma as any).agentExecution.findMany({
       where: {
         userId: 'demo-user',
         status: 'success'
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${executions.length} executions to fix`);
 
     // Get all transactions for the demo user
-    const transactions = await prisma.creditTransaction.findMany({
+    const transactions = await (prisma as any).creditTransaction.findMany({
       where: { userId: 'demo-user' },
       select: {
         amountCents: true,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Update the execution record
-      await prisma.agentExecution.update({
+      await (prisma as any).agentExecution.update({
         where: { id: execution.id },
         data: {
           balanceBeforeCents: balanceBefore,

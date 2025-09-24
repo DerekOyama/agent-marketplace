@@ -6,7 +6,7 @@ export async function POST() {
     console.log("🚀 Starting database setup...");
 
     // Check if agents already exist
-    const existingAgents = await prisma.agent.count();
+    const existingAgents = await (prisma as any).agent.count();
     if (existingAgents > 0) {
       return NextResponse.json({
         success: true,
@@ -21,7 +21,7 @@ export async function POST() {
     const agents = [];
 
     // 1. N8n webhook agent
-    const webhookAgent = await prisma.agent.create({
+    const webhookAgent = await (prisma as any).agent.create({
       data: {
         name: "Demo n8n Agent",
         description: "AI Agent for testing with standardized JSON input/output",
@@ -61,7 +61,7 @@ export async function POST() {
     agents.push(webhookAgent);
 
     // 2. Text Processing Agent
-    const textAgent = await prisma.agent.create({
+    const textAgent = await (prisma as any).agent.create({
       data: {
         name: "Text Processor Agent",
         description: "AI-powered text processing agent that can summarize, translate, and analyze text",
@@ -98,7 +98,7 @@ export async function POST() {
     agents.push(textAgent);
 
     // 3. Data Analysis Agent
-    const dataAgent = await prisma.agent.create({
+    const dataAgent = await (prisma as any).agent.create({
       data: {
         name: "Data Analyzer Agent",
         description: "Advanced data analysis agent for statistical analysis, trend detection, and predictions",
@@ -135,7 +135,7 @@ export async function POST() {
     agents.push(dataAgent);
 
     // 4. Web Scraper Agent
-    const scraperAgent = await prisma.agent.create({
+    const scraperAgent = await (prisma as any).agent.create({
       data: {
         name: "Web Scraper Agent",
         description: "Intelligent web scraping agent with CSS selector support and data extraction",
@@ -197,8 +197,8 @@ export async function POST() {
 
 export async function GET() {
   try {
-    const agentCount = await prisma.agent.count();
-    const agents = await prisma.agent.findMany({
+    const agentCount = await (prisma as any).agent.count();
+    const agents = await (prisma as any).agent.findMany({
       select: {
         id: true,
         name: true,

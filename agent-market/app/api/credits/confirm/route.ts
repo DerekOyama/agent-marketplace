@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Find existing pending purchase
-    let creditPurchase = await prisma.creditPurchase.findFirst({
+    let creditPurchase = await (prisma as any).creditPurchase.findFirst({
       where: {
         userId,
         stripeCheckoutSessionId: sessionId,
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // Fallback: create pending if missing
     if (!creditPurchase) {
-      creditPurchase = await prisma.creditPurchase.create({
+      creditPurchase = await (prisma as any).creditPurchase.create({
         data: {
           userId,
           amountCents: typeof session.amount_total === "number" ? session.amount_total : amountCents,
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Optionally fetch balance to return
-    const updatedUser = await prisma.user.findUnique({
+    const updatedUser = await (prisma as any).user.findUnique({
       where: { id: userId },
       select: { creditBalanceCents: true },
     });
