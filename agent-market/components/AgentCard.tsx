@@ -16,6 +16,7 @@ interface Agent {
   triggerType?: string;
   isActive?: boolean;
   isHidden?: boolean;
+  isDeleted?: boolean;
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
   stats?: Record<string, unknown>;
@@ -140,12 +141,12 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const isN8nAgent = agent.type === 'n8n';
   
   const actions = isN8nAgent ? [
-    // Execute button - always available for authenticated users
+    // Execute button - disabled for deleted agents
     { 
-      name: "Run Agent", 
-      action: "execute", 
-      color: "bg-blue-700 hover:bg-blue-800",
-      description: "Run this agent with your input"
+      name: agent.isDeleted ? "Agent Deleted" : "Run Agent", 
+      action: agent.isDeleted ? "" : "execute", 
+      color: agent.isDeleted ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-800",
+      description: agent.isDeleted ? "This agent has been deleted" : "Run this agent with your input"
     },
     { 
       name: "View Requirements", 
@@ -287,6 +288,11 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                   {agent.isHidden && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                       👁️ Hidden
+                    </span>
+                  )}
+                  {agent.isDeleted && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      🗑️ Deleted
                     </span>
                   )}
                 </div>

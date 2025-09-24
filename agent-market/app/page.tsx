@@ -19,6 +19,7 @@ interface Agent {
   triggerType?: string;
   isActive?: boolean;
   isHidden?: boolean;
+  isDeleted?: boolean;
   pricePerExecutionCents?: number;
   metadata?: Record<string, unknown>;
   pricing?: Record<string, unknown>;
@@ -36,6 +37,7 @@ export default function Home() {
   const [creditRefreshTrigger, setCreditRefreshTrigger] = useState<number>(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
   const [showAdminSidebar, setShowAdminSidebar] = useState(false);
+  const [showDeletedAgents, setShowDeletedAgents] = useState(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
@@ -43,7 +45,8 @@ export default function Home() {
     try {
       // Fast path: load light list first (no heavy stats)
       const debugParam = isAdmin ? "&debug=true" : "";
-      const res = await fetch(`/api/agents?mode=light${debugParam}`);
+      const deletedParam = showDeletedAgents ? "&showDeleted=true" : "";
+      const res = await fetch(`/api/agents?mode=light${debugParam}${deletedParam}`);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
       
@@ -81,7 +84,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [isAdmin, showDeletedAgents]);
 
   useEffect(() => {
     // Hydrate from cache for fast first paint
@@ -444,6 +447,25 @@ export default function Home() {
               </div>
               
               {/* Admin Debug Controls */}
+              
+              {/* Deleted Agents Toggle */}
+              <div className="mb-6">
+                <h4 className="text-md font-medium text-gray-700 mb-3">Agent Visibility</h4>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={showDeletedAgents}
+                      onChange={(e) => setShowDeletedAgents(e.target.checked)}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Show Deleted Agents</span>
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {showDeletedAgents ? "Showing all agents including deleted ones" : "Hiding deleted agents"}
+                  </span>
+                </div>
+              </div>
                   
                   {/* Basic Controls */}
               <div className="mb-6">

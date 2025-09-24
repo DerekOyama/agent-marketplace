@@ -41,6 +41,7 @@ model Agent {
   triggerType      String?
   isActive         Boolean                @default(true)
   isHidden         Boolean                @default(false)
+  isDeleted        Boolean                @default(false)
   metadata         Json?
   pricing          Json?
   stats            Json?

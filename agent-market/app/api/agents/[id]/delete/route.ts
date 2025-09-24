@@ -38,7 +38,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "Only the agent owner or admin can delete agents" }, { status: 403 });
     }
 
-    // Check for related records that might prevent deletion
+    // Check for related records (for logging purposes)
     console.log("Checking for related records...");
     const executions = await prisma.agentExecution.findMany({
       where: { agentId: agentId },
@@ -52,31 +52,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     });
     console.log("Related ratings:", ratings.length);
 
-    // Delete related records first (since there's no cascade delete)
-    console.log("Deleting related records...");
-    
-    if (executions.length > 0) {
-      console.log("Deleting executions...");
-      await prisma.agentExecution.deleteMany({
-        where: { agentId: agentId }
-      });
-      console.log("Executions deleted");
-    }
-
-    if (ratings.length > 0) {
-      console.log("Deleting ratings...");
-      await prisma.agentRating.deleteMany({
-        where: { agentId: agentId }
-      });
-      console.log("Ratings deleted");
-    }
-
-    // Now delete the agent
-    console.log("Attempting to delete agent...");
-    await prisma.agent.delete({
-      where: { id: agentId }
+    // Soft delete the agent (mark as deleted, keep all logs and data)
+    console.log("Soft deleting agent (marking as deleted)...");
+    await prisma.agent.update({
+      where: { id: agentId },
+      data: { 
+        isDeleted: true,
+        isActive: false,  // Also deactivate it
+        updatedAt: new Date()
+      }
     });
-    console.log("Agent deleted successfully");
+    console.log("Agent soft deleted successfully - all logs and data preserved");
 
     return NextResponse.json({ 
       success: true, 
