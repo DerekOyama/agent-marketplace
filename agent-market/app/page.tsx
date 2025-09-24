@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import AgentCard from "../components/AgentCard";
 import CreditBalance from "../components/CreditBalance";
 import AdminSidebar from "../components/AdminSidebar";
@@ -44,9 +44,15 @@ export default function Home() {
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
   const [showMyAgents, setShowMyAgents] = useState(false);
+  const fetchingRef = useRef(false);
 
   // Fetch agents from the database
   const fetchAgents = useCallback(async () => {
+    if (fetchingRef.current) {
+      console.log("Already fetching, skipping...");
+      return;
+    }
+    fetchingRef.current = true;
     setLoading(true);
     try {
       // Fast path: load light list first (no heavy stats)
@@ -105,6 +111,7 @@ export default function Home() {
       setLog("Error fetching agents: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [isAdmin, showDeletedAgents, filterBy, showMyAgents]);
 
@@ -161,12 +168,19 @@ export default function Home() {
     return sorted;
   }, [agents, searchQuery, sortBy, filterBy, showDeletedAgents]);
 
+  // Track showMyAgents changes
   useEffect(() => {
-    // Don't use cache for deleted agents functionality
-    // Cache might not have isDeleted/isHidden fields
+    console.log("showMyAgents state changed to:", showMyAgents);
+  }, [showMyAgents]);
+
+  // Single useEffect to handle all data fetching
+  useEffect(() => {
+    console.log("Filter states changed, refetching...", { showDeletedAgents, filterBy, showMyAgents });
     fetchAgents();
-    
-    // Listen for messages from credit purchase popup
+  }, [showDeletedAgents, filterBy, showMyAgents]);
+
+  // Listen for messages from credit purchase popup
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'CREDIT_PURCHASE_COMPLETE') {
         console.log('Credit purchase completed, refreshing balance and history');
@@ -176,18 +190,7 @@ export default function Home() {
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []); // Remove fetchAgents dependency to prevent circular dependency
-
-  // Track showMyAgents changes
-  useEffect(() => {
-    console.log("showMyAgents state changed to:", showMyAgents);
-  }, [showMyAgents]);
-
-  // Refetch when showDeletedAgents, filterBy, or showMyAgents changes
-  useEffect(() => {
-    console.log("showDeletedAgents, filterBy, or showMyAgents changed, refetching...");
-    fetchAgents();
-  }, [showDeletedAgents, filterBy, showMyAgents]); // Remove fetchAgents from dependencies
+  }, []);
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
@@ -703,8 +706,7 @@ export default function Home() {
                       console.log("My Agents toggle changed to:", e.target.checked);
                       setShowMyAgents(e.target.checked);
                       console.log("showMyAgents state after setState:", e.target.checked);
-                      // Force refetch immediately
-                      setTimeout(() => fetchAgents(), 100);
+                      // useEffect will handle the refetch automatically
                     }}
                     className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
