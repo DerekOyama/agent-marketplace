@@ -67,8 +67,8 @@ export default function Home() {
       
       if (data.agents && data.agents.length > 0) {
         // Show light list immediately
+        console.log("Setting agents:", data.agents.map(a => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
         setAgents(data.agents);
-        try { localStorage.setItem("agentsCache", JSON.stringify(data.agents)); } catch {}
 
         // Background upgrade to full stats without blocking UI
         try {
@@ -78,7 +78,6 @@ export default function Home() {
             const fullData = fullText ? JSON.parse(fullText) : {};
             if (fullData.agents) {
               setAgents(fullData.agents);
-              try { localStorage.setItem("agentsCache", JSON.stringify(fullData.agents)); } catch {}
             }
           }
         } catch {}
@@ -95,6 +94,12 @@ export default function Home() {
 
   // Filter and sort agents based on search and sort criteria
   const filteredAndSortedAgents = useMemo(() => {
+    console.log("Filtering agents:", { 
+      totalAgents: agents.length, 
+      filterBy, 
+      showDeletedAgents,
+      agentDetails: agents.map(a => ({ name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden }))
+    });
     let filtered = agents;
 
     // Apply search filter
@@ -136,20 +141,13 @@ export default function Home() {
       }
     });
 
+    console.log("Final filtered agents:", sorted.length, sorted.map(a => ({ name: a.name, isDeleted: a.isDeleted })));
     return sorted;
   }, [agents, searchQuery, sortBy, filterBy, showDeletedAgents]);
 
   useEffect(() => {
-    // Hydrate from cache for fast first paint
-    try {
-      const cached = localStorage.getItem("agentsCache");
-      if (cached) {
-        const parsed = JSON.parse(cached) as Agent[];
-        if (Array.isArray(parsed)) {
-          setAgents(parsed);
-        }
-      }
-    } catch {}
+    // Don't use cache for deleted agents functionality
+    // Cache might not have isDeleted/isHidden fields
     fetchAgents();
     
     // Listen for messages from credit purchase popup
