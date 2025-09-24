@@ -19,7 +19,7 @@ export async function POST(
     }
 
     // Get the current agent
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId }
     });
 
@@ -28,7 +28,7 @@ export async function POST(
     }
 
     // Toggle the hidden status
-    const updatedAgent = await prisma.agent.update({
+    const updatedAgent = await (prisma as any).agent.update({
       where: { id: agentId },
       data: { isHidden: !agent.isHidden }
     });

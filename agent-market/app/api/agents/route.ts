@@ -134,10 +134,10 @@ export async function GET(req: Request) {
     });
     
     // Create lookup maps for fast access
-    const executionMap = new Map(executionStats.map(s => [s.agentId, s]));
-    const successMap = new Map(successCounts.map(s => [s.agentId, s._count.id]));
-    const failureMap = new Map(failureCounts.map(s => [s.agentId, s._count.id]));
-    const userMap = new Map(userStats.map(s => [s.agentId, s]));
+    const executionMap = new Map(executionStats.map((s: any) => [s.agentId, s]));
+    const successMap = new Map(successCounts.map((s: any) => [s.agentId, s._count.id]));
+    const failureMap = new Map(failureCounts.map((s: any) => [s.agentId, s._count.id]));
+    const userMap = new Map(userStats.map((s: any) => [s.agentId, s]));
     
     // Attach computed stats to each agent
     const agentsWithStats = agentsWithFields.map(agent => {
@@ -146,20 +146,20 @@ export async function GET(req: Request) {
       const failureCount = failureMap.get(agent.id) || 0;
       const userStat = userMap.get(agent.id);
       
-      const totalExecutions = execStats?._count.id || 0;
-      const successRate = totalExecutions > 0 ? Math.round((successCount / totalExecutions) * 100) : 0;
+      const totalExecutions = (execStats as any)?._count?.id || 0;
+      const successRate = totalExecutions > 0 ? Math.round((Number(successCount) / Number(totalExecutions)) * 100) : 0;
       
       const realTimeStats = {
         totalExecutions,
         successfulExecutions: successCount,
         failedExecutions: failureCount,
         successRate,
-        failureRate: totalExecutions > 0 ? Math.round((failureCount / totalExecutions) * 100) : 0,
-        averageExecutionTime: Math.round(execStats?._avg.duration || 0),
-        minExecutionTime: execStats?._min.duration || 0,
-        maxExecutionTime: execStats?._max.duration || 0,
-        uniqueUsers: userStat?._count.id || 0,
-        averageRating: userStat?._avg.rating || 0,
+        failureRate: totalExecutions > 0 ? Math.round((Number(failureCount) / Number(totalExecutions)) * 100) : 0,
+        averageExecutionTime: Math.round((execStats as any)?._avg?.duration || 0),
+        minExecutionTime: (execStats as any)?._min?.duration || 0,
+        maxExecutionTime: (execStats as any)?._max?.duration || 0,
+        uniqueUsers: (userStat as any)?._count?.id || 0,
+        averageRating: (userStat as any)?._avg?.rating || 0,
         lastExecutedAt: agent.lastExecutedAt,
         lastUpdated: new Date().toISOString()
       };

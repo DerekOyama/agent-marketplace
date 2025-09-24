@@ -29,7 +29,7 @@ export async function POST(
     }
 
     // Get the current agent
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId }
     });
 
@@ -38,7 +38,7 @@ export async function POST(
     }
 
     // Update the agent price
-    const updatedAgent = await prisma.agent.update({
+    const updatedAgent = await (prisma as any).agent.update({
       where: { id: agentId },
       data: { pricePerExecutionCents: Math.round(pricePerExecutionCents) }
     });

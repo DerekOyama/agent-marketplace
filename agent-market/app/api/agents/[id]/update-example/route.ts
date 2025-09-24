@@ -24,7 +24,7 @@ export async function POST(
     }
 
     // Check if agent exists
-    const agent = await prisma.agent.findUnique({
+    const agent = await (prisma as any).agent.findUnique({
       where: { id: agentId },
       select: { id: true, ownerId: true }
     });
@@ -40,7 +40,7 @@ export async function POST(
     }
 
     // Update agent with new examples
-    const updatedAgent = await prisma.agent.update({
+    const updatedAgent = await (prisma as any).agent.update({
       where: { id: agentId },
       data: {
         exampleInput: exampleInput,

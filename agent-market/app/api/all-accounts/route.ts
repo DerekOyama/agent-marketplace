@@ -27,9 +27,9 @@ export async function GET(req: NextRequest) {
 
     console.log(`Found ${users.length} user accounts`);
 
-    const accountData = users.map(user => {
+    const accountData = users.map((user: any) => {
       // Calculate balance from transactions
-      const calculatedBalance = user.creditTransactions.reduce((sum, tx) => sum + tx.amountCents, 0);
+      const calculatedBalance = user.creditTransactions.reduce((sum: number, tx: any) => sum + tx.amountCents, 0);
       const balanceConsistent = user.creditBalanceCents === calculatedBalance;
       
       return {
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         balanceFormatted: `$${(user.creditBalanceCents / 100).toFixed(2)}`,
         accountCreated: user.createdAt,
         totalTransactions: user.creditTransactions.length,
-        recentTransactions: user.creditTransactions.slice(0, 5).map(tx => ({
+        recentTransactions: user.creditTransactions.slice(0, 5).map((tx: any) => ({
           description: tx.description,
           amount: tx.amountCents,
           amountFormatted: tx.amountCents > 0 ? `+$${(tx.amountCents / 100).toFixed(2)}` : `$${(tx.amountCents / 100).toFixed(2)}`,
@@ -52,12 +52,12 @@ export async function GET(req: NextRequest) {
     });
 
     // Summary
-    const totalBalance = users.reduce((sum, user) => sum + user.creditBalanceCents, 0);
-    const totalTransactions = users.reduce((sum, user) => sum + user.creditTransactions.length, 0);
+    const totalBalance = users.reduce((sum: number, user: any) => sum + user.creditBalanceCents, 0);
+    const totalTransactions = users.reduce((sum: number, user: any) => sum + user.creditTransactions.length, 0);
     
     // Check for inconsistencies
-    const inconsistentUsers = users.filter(user => {
-      const calculatedBalance = user.creditTransactions.reduce((sum, tx) => sum + tx.amountCents, 0);
+    const inconsistentUsers = users.filter((user: any) => {
+      const calculatedBalance = user.creditTransactions.reduce((sum: number, tx: any) => sum + tx.amountCents, 0);
       return user.creditBalanceCents !== calculatedBalance;
     });
 
@@ -71,8 +71,8 @@ export async function GET(req: NextRequest) {
         inconsistentAccounts: inconsistentUsers.length,
         allAccountsConsistent: inconsistentUsers.length === 0
       },
-      inconsistentAccounts: inconsistentUsers.map(user => {
-        const calculatedBalance = user.creditTransactions.reduce((sum, tx) => sum + tx.amountCents, 0);
+      inconsistentAccounts: inconsistentUsers.map((user: any) => {
+        const calculatedBalance = user.creditTransactions.reduce((sum: number, tx: any) => sum + tx.amountCents, 0);
         return {
           email: user.email,
           storedBalance: user.creditBalanceCents,
