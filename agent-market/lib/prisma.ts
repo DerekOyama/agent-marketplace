@@ -1,8 +1,40 @@
 // Robust Prisma client with fallback for multiple users
-let prisma;
+import { PrismaClient } from '@prisma/client';
+
+interface WhereClause {
+  email?: string;
+  id?: string;
+  userId?: string;
+}
+
+interface UpdateData {
+  [key: string]: unknown;
+}
+
+interface TransactionCallback {
+  (prisma: unknown): Promise<unknown>;
+}
+
+interface MockUser {
+  id: string;
+  email: string;
+  creditBalanceCents: number;
+  createdAt: Date;
+}
+
+interface MockTransaction {
+  id: string;
+  amountCents: number;
+  type: string;
+  description: string;
+  balanceAfterCents: number;
+  createdAt: Date;
+}
+
+let prisma: unknown;
 
 // Mock data for multiple users
-const mockUsers = [
+const mockUsers: MockUser[] = [
   {
     id: 'demo-user',
     email: 'demo@example.com',
@@ -29,7 +61,7 @@ const mockUsers = [
   }
 ];
 
-const mockTransactions = {
+const mockTransactions: Record<string, MockTransaction[]> = {
   'demo-user': [
     { id: 'tx1', amountCents: -50, type: 'usage', description: 'Agent execution: aa', balanceAfterCents: 33300, createdAt: new Date('2025-09-23T16:54:51.265Z') },
     { id: 'tx2', amountCents: -50, type: 'usage', description: 'Agent execution: aa', balanceAfterCents: 33350, createdAt: new Date('2025-09-23T16:52:29.601Z') },
@@ -52,7 +84,7 @@ const mockTransactions = {
 // Create mock Prisma client
 const createMockPrisma = () => ({
   user: {
-    findUnique: async ({ where }: any) => {
+    findUnique: async ({ where }: { where: WhereClause }) => {
       if (where.email) {
         return mockUsers.find(user => user.email === where.email) || null;
       }
@@ -62,7 +94,7 @@ const createMockPrisma = () => ({
       return null;
     },
     findMany: async () => mockUsers,
-    update: async ({ where, data }: any) => {
+    update: async ({ where, data }: { where: WhereClause; data: UpdateData }) => {
       const user = mockUsers.find(u => u.id === where.id);
       if (user) {
         Object.assign(user, data);
@@ -72,13 +104,13 @@ const createMockPrisma = () => ({
     }
   },
   creditTransaction: {
-    findMany: async ({ where }: any) => {
+    findMany: async ({ where }: { where: WhereClause }) => {
       const userId = where.userId;
-      return mockTransactions[userId] || [];
+      return mockTransactions[userId as string] || [];
     }
   },
   agentExecution: {
-    findMany: async ({ where }: any) => {
+    findMany: async ({ where }: { where: WhereClause }) => {
       return [
         {
           id: 'exec1',
@@ -102,14 +134,13 @@ const createMockPrisma = () => ({
   payout: {
     findMany: async () => []
   },
-  $transaction: async (callback: any) => {
+  $transaction: async (callback: TransactionCallback) => {
     return await callback(createMockPrisma());
   }
 });
 
 // Try to use real Prisma client, fall back to mock
 try {
-  const { PrismaClient } = require('@prisma/client');
   const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined
   }
@@ -118,10 +149,12 @@ try {
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
   
-  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-} catch (error) {
+  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma as PrismaClient
+} catch {
   console.warn('Prisma client failed to load, using mock data for multiple users');
   prisma = createMockPrisma();
 }
 
-export { prisma }
+// Export prisma with proper typing for API routes
+export { prisma as default };
+export const prismaClient = prisma as any;

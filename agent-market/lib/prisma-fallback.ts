@@ -1,7 +1,21 @@
 // Temporary fallback for when Prisma client is broken
+interface WhereClause {
+  email?: string;
+  id?: string;
+  userId?: string;
+}
+
+interface UpdateData {
+  [key: string]: unknown;
+}
+
+interface TransactionCallback {
+  (prisma: unknown): Promise<unknown>;
+}
+
 export const prisma = {
   user: {
-    findUnique: async ({ where }: any) => {
+    findUnique: async ({ where }: { where: WhereClause }) => {
       // Return mock data for demo user
       if (where.email === 'demo@example.com') {
         return {
@@ -23,13 +37,13 @@ export const prisma = {
         }
       ];
     },
-    update: async ({ where, data }: any) => {
+    update: async ({ where, data }: { where: WhereClause; data: UpdateData }) => {
       console.log('Mock update:', { where, data });
       return { id: where.id, ...data };
     }
   },
   creditTransaction: {
-    findMany: async ({ where }: any) => {
+    findMany: async () => {
       // Return mock transaction data
       return [
         {
@@ -76,7 +90,7 @@ export const prisma = {
     }
   },
   agentExecution: {
-    findMany: async ({ where }: any) => {
+    findMany: async () => {
       return [
         {
           id: 'exec1',
@@ -100,7 +114,7 @@ export const prisma = {
   payout: {
     findMany: async () => []
   },
-  $transaction: async (callback: any) => {
+  $transaction: async (callback: TransactionCallback) => {
     return await callback(prisma);
   }
 };
