@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
 
     // Update execution cost to use agent's actual price
     executionCostCents = agent.pricePerExecutionCents || 50;
+    console.log('Agent execution cost:', {
+      agentName: agent.name,
+      pricePerExecutionCents: agent.pricePerExecutionCents,
+      executionCostCents: executionCostCents
+    });
     
     // Re-check credits with actual agent price
     const finalCreditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
@@ -353,6 +358,12 @@ export async function POST(req: NextRequest) {
       actualCreditsConsumed = executionCostCents;
       
       // Deduct credits using CreditManager
+      console.log('Deducting credits:', {
+        userId,
+        amountCents: executionCostCents,
+        agentName: agent?.name || agentId
+      });
+      
       const creditResult = await CreditManager.deductCredits({
         userId,
         amountCents: executionCostCents,
@@ -368,8 +379,13 @@ export async function POST(req: NextRequest) {
         }
       });
       
+      console.log('Credit deduction result:', creditResult);
+      
       if (creditResult.success && creditResult.newBalance !== undefined) {
         finalBalance = creditResult.newBalance;
+        console.log('Credits deducted successfully, new balance:', finalBalance);
+      } else {
+        console.error('Credit deduction failed:', creditResult.error);
       }
 
       // Record successful execution metrics
