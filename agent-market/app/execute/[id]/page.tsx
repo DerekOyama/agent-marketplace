@@ -61,11 +61,11 @@ export default function ExecuteAgentPage() {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [testInput, setTestInput] = useState("");
-  const [testOutput, setTestOutput] = useState("");
+  const [showTestNotification, setShowTestNotification] = useState(false);
+  const [testResult, setTestResult] = useState("");
   const [isTesting, setIsTesting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const parseInputRequirements = (_requirements: string): InputField[] => {
     // For now, we'll create a simple text field
@@ -287,12 +287,10 @@ export default function ExecuteAgentPage() {
   };
 
   const handleTestAgent = async () => {
-    if (!agent || !testInput.trim()) return;
+    if (!agent) return;
 
     setIsTesting(true);
     try {
-      const formattedInput = formatInputForAgent({ text: testInput });
-      
       const response = await fetch('/api/execute', {
         method: 'POST',
         headers: {
@@ -300,60 +298,58 @@ export default function ExecuteAgentPage() {
         },
         body: JSON.stringify({
           agentId: agent.id,
-          data: formattedInput
+          data: { text: "Test input from admin" }
         }),
       });
 
       const result = await response.json();
       
       if (result.success) {
-        setTestOutput(JSON.stringify(result.data, null, 2));
+        setTestResult(`✅ Test successful! Output: ${JSON.stringify(result.result, null, 2)}`);
       } else {
-        setTestOutput(`Error: ${result.message || result.error || 'Unknown error'}`);
+        setTestResult(`❌ Test failed: ${result.message || result.error || 'Unknown error'}`);
       }
+      setShowTestNotification(true);
+      
+      // Auto-hide notification after 8 seconds
+      setTimeout(() => {
+        setShowTestNotification(false);
+      }, 8000);
     } catch (err) {
-      setTestOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTestResult(`❌ Test error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setShowTestNotification(true);
+      
+      setTimeout(() => {
+        setShowTestNotification(false);
+      }, 8000);
     } finally {
       setIsTesting(false);
     }
   };
 
-  const handleSaveExample = async () => {
-    if (!agent || !testInput.trim() || !testOutput.trim()) return;
 
-    setIsSaving(true);
+  const handleDeleteAgent = async () => {
+    if (!agent) return;
+
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/agents/${agent.id}/update-example`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exampleInput: testInput,
-          exampleOutput: testOutput
-        }),
+      const response = await fetch(`/api/agents/${agent.id}/delete`, {
+        method: 'DELETE',
       });
 
       const result = await response.json();
       
       if (result.success) {
-        // Update the agent with new examples
-        setAgent({
-          ...agent,
-          exampleInput: testInput,
-          exampleOutput: testOutput
-        });
-        setShowEditModal(false);
-        setTestInput("");
-        setTestOutput("");
-        alert('Example saved successfully!');
+        // Redirect to marketplace after successful deletion
+        router.push('/');
       } else {
-        alert(`Failed to save example: ${result.message || 'Unknown error'}`);
+        setError(`Failed to delete agent: ${result.error}`);
       }
     } catch (err) {
-      alert(`Error saving example: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(`Error deleting agent: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
-      setIsSaving(false);
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -457,6 +453,31 @@ export default function ExecuteAgentPage() {
         </div>
       )}
 
+      {/* Test Notification */}
+      {showTestNotification && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-blue-800 font-medium">Agent Test Result</p>
+                <p className="text-blue-700 text-sm mt-1">{testResult}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTestNotification(false)}
+              className="text-blue-400 hover:text-blue-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Agent Information */}
@@ -549,13 +570,24 @@ export default function ExecuteAgentPage() {
                     Rate This Agent
                   </button>
                   {canEdit() && (
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <span>✏️</span>
-                      {isAdmin() ? 'Admin Edit' : 'Edit Agent'}
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleTestAgent}
+                        disabled={isTesting}
+                        className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <span>🧪</span>
+                        {isTesting ? 'Testing...' : 'Test Agent'}
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
+                        className="w-full px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <span>🗑️</span>
+                        {isDeleting ? 'Deleting...' : 'Delete Agent'}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -789,20 +821,16 @@ export default function ExecuteAgentPage() {
         </div>
       )}
 
-      {/* Edit Agent Modal */}
-      {showEditModal && (
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-gray-900">
-                {isAdmin() ? 'Admin Edit' : 'Edit Agent'} - {agent?.name}
+                Delete Agent
               </h3>
               <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setTestInput("");
-                  setTestOutput("");
-                }}
+                onClick={() => setShowDeleteConfirm(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -811,78 +839,26 @@ export default function ExecuteAgentPage() {
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-3">Test Agent</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {isAdmin() 
-                    ? 'Test this agent with sample input to generate example output for customers. As an admin, you can edit any agent.'
-                    : 'Test your agent with sample input to generate example output for customers.'
-                  }
-                </p>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Test Input
-                    </label>
-                    <textarea
-                      value={testInput}
-                      onChange={(e) => setTestInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
-                      placeholder="Enter test input for your agent..."
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={handleTestAgent}
-                    disabled={!testInput.trim() || isTesting}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isTesting ? 'Testing...' : 'Test Agent'}
-                  </button>
-                  
-                  {testOutput && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Test Output
-                      </label>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <pre className="text-sm text-gray-900 whitespace-pre-wrap">{testOutput}</pre>
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Are you sure you want to delete <strong>&quot;{agent?.name}&quot;</strong>? This action cannot be undone.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAgent}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Agent'}
+                </button>
               </div>
-
-              {testOutput && (
-                <div className="border-t border-gray-200 pt-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-3">Save Example</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Save this test case as an example to show customers what your agent does.
-                  </p>
-                  
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSaveExample}
-                      disabled={isSaving}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? 'Saving...' : 'Save Example'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setTestInput("");
-                        setTestOutput("");
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

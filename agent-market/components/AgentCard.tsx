@@ -46,6 +46,11 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [newPrice, setNewPrice] = useState<string>(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
 
   const handleAction = async (action: string) => {
+    if (action === 'delete-agent') {
+      await handleDeleteAgent();
+      return;
+    }
+    
     setLocalLog("");
     await onAction(action, agent.id);
     setLocalLog(log);
@@ -94,6 +99,28 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
     }
   };
 
+  const handleDeleteAgent = async () => {
+    if (!confirm(`Are you sure you want to delete "${agent.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/agents/${agent.id}/delete`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Refresh the agent list
+        await onAction('refresh-agent', agent.id);
+      } else {
+        alert(`Failed to delete agent: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Error deleting agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   const isN8nAgent = agent.type === 'n8n';
   
@@ -124,6 +151,12 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         action: "edit-price",
         color: "bg-purple-700 hover:bg-purple-800",
         description: "Edit the price per execution"
+      },
+      {
+        name: "Delete Agent",
+        action: "delete-agent",
+        color: "bg-red-700 hover:bg-red-800",
+        description: "Permanently delete this agent"
       }
     ] : [])
   ] : [
