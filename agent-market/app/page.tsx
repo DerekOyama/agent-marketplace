@@ -54,10 +54,15 @@ export default function Home() {
       const deletedParam = showDeletedAgents ? "&showDeleted=true" : "";
       const filterParam = showMyAgents ? "&filterBy=my-agents" : (filterBy !== "all" ? `&filterBy=${filterBy}` : "");
       const url = `/api/agents?mode=light${debugParam}${deletedParam}${filterParam}`;
+      console.log("URL construction debug:", {
+        debugParam,
+        deletedParam, 
+        filterParam,
+        showMyAgents,
+        filterBy,
+        finalUrl: url
+      });
       console.log("Fetching agents with URL:", url);
-      console.log("showDeletedAgents state:", showDeletedAgents);
-      console.log("showMyAgents state:", showMyAgents);
-      console.log("filterParam:", filterParam);
       const res = await fetch(url);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
@@ -182,7 +187,7 @@ export default function Home() {
   useEffect(() => {
     console.log("showDeletedAgents, filterBy, or showMyAgents changed, refetching...");
     fetchAgents();
-  }, [showDeletedAgents, filterBy, showMyAgents, fetchAgents]);
+  }, [showDeletedAgents, filterBy, showMyAgents]); // Remove fetchAgents from dependencies
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
