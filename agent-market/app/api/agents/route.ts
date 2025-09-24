@@ -16,7 +16,8 @@ export async function GET(req: Request) {
       SELECT id, name, description, "runUrl", "quoteUrl", token, type, "n8nWorkflowId", 
              "n8nInstanceUrl", "webhookUrl", "triggerType", "isActive", "isHidden", "isDeleted",
              metadata, pricing, "inputSchema", "outputSchema", "createdAt", "updatedAt",
-             "totalExecutions", "avgRating", "totalUsers", "lastExecutedAt"
+             "totalExecutions", "avgRating", "totalUsers", "lastExecutedAt",
+             "pricePerExecutionCents", "ownerId"
       FROM "Agent"
       ORDER BY "createdAt" DESC
     ` as Array<{
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
       isHidden: boolean; isDeleted: boolean; metadata: unknown; pricing: unknown;
       inputSchema: unknown; outputSchema: unknown; createdAt: Date; updatedAt: Date;
       totalExecutions: number; avgRating: number | null; totalUsers: number | null;
-      lastExecutedAt: Date | null;
+      lastExecutedAt: Date | null; pricePerExecutionCents: number | null; ownerId: string | null;
     }>;
     
     // Apply the same filtering logic as the original query

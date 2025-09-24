@@ -39,7 +39,16 @@ export async function POST(req: NextRequest) {
 
     // Get the agent from database
     const agent = await prisma.agent.findUnique({
-      where: { id: agentId }
+      where: { id: agentId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        webhookUrl: true,
+        pricePerExecutionCents: true,
+        ownerId: true,
+        stats: true
+      }
     });
 
     if (!agent) {
@@ -57,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update execution cost to use agent's actual price
-    executionCostCents = (agent as { pricePerExecutionCents?: number }).pricePerExecutionCents || 50;
+    executionCostCents = agent.pricePerExecutionCents || 50;
     
     // Re-check credits with actual agent price
     const finalCreditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
