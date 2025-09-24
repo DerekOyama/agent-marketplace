@@ -177,18 +177,38 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
         </button>
       </div>
 
-      {/* Sign Out Button - Only show when authenticated */}
+      {/* Account Actions - Only show when authenticated */}
       {status === "authenticated" && (
-        <button
-          onClick={() => signOut()}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm border border-gray-300 transition-all duration-300 group"
-          title="Sign out"
-        >
-          <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Sign Out</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          {/* Switch Account Button */}
+          <button
+            onClick={() => {
+              signOut({ callbackUrl: window.location.href }).then(() => {
+                // After sign out, sign in with account selection
+                signIn("google");
+              });
+            }}
+            className="flex items-center space-x-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg shadow-sm border border-blue-300 transition-all duration-300 group"
+            title="Switch to a different Google account"
+          >
+            <svg className="w-4 h-4 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            <span className="text-sm font-medium text-blue-700">Switch Account</span>
+          </button>
+
+          {/* Sign Out Button */}
+          <button
+            onClick={() => signOut()}
+            className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm border border-gray-300 transition-all duration-300 group"
+            title="Sign out"
+          >
+            <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Sign Out</span>
+          </button>
+        </div>
       )}
     </div>
   );
