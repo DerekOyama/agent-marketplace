@@ -34,24 +34,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check and deduct credits before execution
-    const executionCostCents = 50; // $0.50 per execution
-    
-    // Check if user has sufficient credits
-    const creditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
-    
-    if (!creditCheck.sufficient) {
-      return NextResponse.json(
-        { 
-          error: "insufficient_credits", 
-          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(creditCheck.currentBalance / 100).toFixed(2)}`,
-          requiredCredits: executionCostCents,
-          availableCredits: creditCheck.currentBalance,
-          agentId
-        },
-        { status: 402 }
-      );
-    }
+    // We'll check credits after getting the agent's actual price
+    let executionCostCents = 50; // Default to $0.50 if no price set
 
     // Get the agent from database
     const agent = await prisma.agent.findUnique({
@@ -69,6 +53,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Agent is not a valid n8n webhook agent" },
         { status: 400 }
+      );
+    }
+
+    // Update execution cost to use agent's actual price
+    executionCostCents = (agent as { pricePerExecutionCents?: number }).pricePerExecutionCents || 50;
+    
+    // Re-check credits with actual agent price
+    const finalCreditCheck = await CreditManager.hasSufficientCredits(userId, executionCostCents);
+    
+    if (!finalCreditCheck.sufficient) {
+      return NextResponse.json(
+        { 
+          error: "insufficient_credits", 
+          message: `Not enough credits. Required: $${(executionCostCents / 100).toFixed(2)}, Available: $${(finalCreditCheck.currentBalance / 100).toFixed(2)}`,
+          requiredCredits: executionCostCents,
+          availableCredits: finalCreditCheck.currentBalance,
+          agentId
+        },
+        { status: 402 }
       );
     }
 
@@ -332,7 +335,7 @@ export async function POST(req: NextRequest) {
 
     // Calculate actual credits consumed and get final balance
     let actualCreditsConsumed = 0;
-    let finalBalance = creditCheck.currentBalance;
+    let finalBalance = finalCreditCheck.currentBalance;
 
     // Use already calculated execution time
 

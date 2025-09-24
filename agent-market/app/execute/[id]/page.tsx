@@ -70,6 +70,7 @@ export default function ExecuteAgentPage() {
   const [showPriceEdit, setShowPriceEdit] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   const [newPrice, setNewPrice] = useState<string>("");
+  const [creditRefreshTrigger, setCreditRefreshTrigger] = useState(0);
 
   const parseInputRequirements = (requirements: string): InputField[] => {
     try {
@@ -291,6 +292,9 @@ export default function ExecuteAgentPage() {
         setSuccessMessage(`Agent executed successfully! Cost: $${cost.toFixed(2)}. Check your history for details.`);
         setShowSuccessMessage(true);
         
+        // Refresh credit balance
+        setCreditRefreshTrigger(prev => prev + 1);
+        
         // Auto-hide success message after 5 seconds
         setTimeout(() => {
           setShowSuccessMessage(false);
@@ -467,6 +471,9 @@ export default function ExecuteAgentPage() {
         setSuccessMessage(`Price updated to $${newPrice} per execution`);
         setShowSuccessMessage(true);
         
+        // Refresh credit balance in case it affects the display
+        setCreditRefreshTrigger(prev => prev + 1);
+        
         // Auto-hide success message after 3 seconds
         setTimeout(() => {
           setShowSuccessMessage(false);
@@ -569,7 +576,7 @@ export default function ExecuteAgentPage() {
               <p className="text-gray-900 mt-1">Execute {agent.name} with your custom input</p>
             </div>
             <div className="flex items-center space-x-4">
-              <CreditBalance />
+              <CreditBalance refreshTrigger={creditRefreshTrigger} />
               <Link
                 href="/"
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
