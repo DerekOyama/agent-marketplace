@@ -8,6 +8,8 @@ export async function GET(req: Request) {
     const debugMode = url.searchParams.get('debug') === 'true';
     const showDeleted = url.searchParams.get('showDeleted') === 'true';
     
+    console.log("API received parameters:", { mode, debugMode, showDeleted });
+    
     // Build where clause based on parameters
     const whereClause: Record<string, unknown> = {};
     
@@ -18,6 +20,8 @@ export async function GET(req: Request) {
     if (!showDeleted) {
       whereClause.isDeleted = false;
     }
+    
+    console.log("Where clause:", whereClause);
     
     const agents = await prisma.agent.findMany({
       where: whereClause,
@@ -54,6 +58,9 @@ export async function GET(req: Request) {
         lastExecutedAt: mode === 'full'
       }
     });
+    
+    console.log("Found agents:", agents.length);
+    console.log("Agent details:", agents.map(a => ({ id: a.id, name: a.name, isDeleted: a.isDeleted, isHidden: a.isHidden })));
     
     if (mode === 'light') {
       return NextResponse.json({ agents }, { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } });

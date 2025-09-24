@@ -50,7 +50,10 @@ export default function Home() {
       // Fast path: load light list first (no heavy stats)
       const debugParam = isAdmin ? "&debug=true" : "";
       const deletedParam = showDeletedAgents ? "&showDeleted=true" : "";
-      const res = await fetch(`/api/agents?mode=light${debugParam}${deletedParam}`);
+      const url = `/api/agents?mode=light${debugParam}${deletedParam}`;
+      console.log("Fetching agents with URL:", url);
+      console.log("showDeletedAgents state:", showDeletedAgents);
+      const res = await fetch(url);
       const text = await res.text();
       let data: { agents?: Agent[] } = {};
       
@@ -163,6 +166,11 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchAgents]);
 
+  // Refetch when showDeletedAgents changes
+  useEffect(() => {
+    console.log("showDeletedAgents changed, refetching...");
+    fetchAgents();
+  }, [showDeletedAgents, fetchAgents]);
 
 
   // Removed auto-refresh - users must manually refresh page to update agents
@@ -676,7 +684,12 @@ export default function Home() {
                     <input
                       type="checkbox"
                       checked={showDeletedAgents}
-                      onChange={(e) => setShowDeletedAgents(e.target.checked)}
+                      onChange={(e) => {
+                        console.log("Toggle changed to:", e.target.checked);
+                        setShowDeletedAgents(e.target.checked);
+                        // Force refetch immediately
+                        setTimeout(() => fetchAgents(), 100);
+                      }}
                       className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <span className="text-sm text-gray-700">Show Deleted</span>
