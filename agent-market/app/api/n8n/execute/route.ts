@@ -4,6 +4,7 @@ import { StandardAgentInput, StandardAgentOutput } from "../../../../types/agent
 import { MetricsCollector } from "../../../../lib/metrics-collector";
 import { DataSanitizer } from "../../../../lib/data-sanitizer";
 import { CreditManager } from "../../../../lib/credit-manager";
+import { PayoutManager } from "../../../../lib/payout-manager";
 import { getCurrentUserId } from "../../../../lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -394,6 +395,24 @@ export async function POST(req: NextRequest) {
           responseSize: responseData?.length || 0
         }
       });
+
+      // Record earnings for agent creator (revenue sharing)
+      const earningsResult = await PayoutManager.recordEarnings({
+        agentId,
+        userId,
+        executionCostCents: actualCreditsConsumed,
+        executionId
+      });
+
+      if (earningsResult.success && earningsResult.earnings) {
+        console.log('Earnings recorded:', {
+          agentId,
+          creatorEarnings: `$${(earningsResult.earnings.creatorEarningsCents / 100).toFixed(2)}`,
+          platformFee: `$${(earningsResult.earnings.platformFeeCents / 100).toFixed(2)}`
+        });
+      } else {
+        console.warn('Failed to record earnings:', earningsResult.error);
+      }
 
     } else {
       // On failed execution, get current balance without deducting

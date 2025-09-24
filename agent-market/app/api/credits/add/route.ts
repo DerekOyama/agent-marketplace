@@ -1,26 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { CreditManager } from "../../../../lib/credit-manager";
 import { z } from "zod";
+import { ApiHandler, CommonSchemas } from "../../../../lib/api-utils";
 
 const AddCreditsSchema = z.object({
-  amountCents: z.number().int().positive(),
+  amountCents: CommonSchemas.amountCents,
   type: z.enum(['bonus', 'adjustment']).default('bonus'),
   description: z.string().optional()
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { amountCents, type, description } = AddCreditsSchema.parse(body);
-    
-    const userId = "demo-user"; // In real app, get from session/auth
-    
+export const POST = ApiHandler.createPostHandler(
+  AddCreditsSchema,
+  async (req: NextRequest, userId: string, data) => {
     // Add credits using CreditManager for proper transaction tracking
     const result = await CreditManager.addCredits({
       userId,
-      amountCents,
-      type,
-      description: description || `Credit ${type}: ${amountCents} cents`,
+      amountCents: data.amountCents,
+      type: data.type,
+      description: data.description || `Credit ${data.type}: ${data.amountCents} cents`,
       metadata: {
         source: 'manual_addition',
         timestamp: new Date().toISOString()
@@ -28,38 +25,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json({
-        error: "failed_to_add_credits",
-        message: result.error
-      }, { status: 400 });
+      throw new Error(`Failed to add credits: ${result.error}`);
     }
 
     // Get updated user info
     const balanceResult = await CreditManager.getBalance(userId);
 
-    return NextResponse.json({
-      success: true,
+    return {
       transaction: result.transaction,
       newBalance: result.newBalance,
       user: {
         id: userId,
         creditBalanceCents: balanceResult.balance
       }
-    });
-
-  } catch (error) {
-    console.error("Add credits error:", error);
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        error: "validation_error",
-        details: error.issues
-      }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      error: "internal_error",
-      message: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    };
   }
-}
+);

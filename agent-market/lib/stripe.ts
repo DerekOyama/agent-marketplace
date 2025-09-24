@@ -171,3 +171,91 @@ export async function getStripeAccountInfo() {
     return null;
   }
 }
+
+// Create a transfer to a connected account (for payouts)
+export async function createTransferToConnectedAccount(params: {
+  amount: number;
+  currency: string;
+  destination: string; // Connected account ID
+  description?: string;
+  metadata?: Record<string, string>;
+}) {
+  if (!isStripeConfigured()) {
+    throw new Error("Stripe is not properly configured");
+  }
+
+  try {
+    const transfer = await stripe.transfers.create({
+      amount: params.amount,
+      currency: params.currency.toLowerCase(),
+      destination: params.destination,
+      description: params.description || "Agent Marketplace Payout",
+      metadata: {
+        source: "agent_marketplace_payout",
+        ...params.metadata
+      }
+    });
+
+    return transfer;
+  } catch (error) {
+    console.error("Error creating transfer:", error);
+    throw error;
+  }
+}
+
+// Create a payout to a bank account (direct payout)
+export async function createDirectPayout(params: {
+  amount: number;
+  currency: string;
+  destination: string; // Bank account ID or external account
+  description?: string;
+  metadata?: Record<string, string>;
+}) {
+  if (!isStripeConfigured()) {
+    throw new Error("Stripe is not properly configured");
+  }
+
+  try {
+    // First, create a transfer to the platform account
+    const transfer = await stripe.transfers.create({
+      amount: params.amount,
+      currency: params.currency.toLowerCase(),
+      destination: params.destination,
+      description: params.description || "Agent Marketplace Payout",
+      metadata: {
+        source: "agent_marketplace_direct_payout",
+        ...params.metadata
+      }
+    });
+
+    // Then create a payout from the platform account
+    const payout = await stripe.payouts.create({
+      amount: params.amount,
+      currency: params.currency.toLowerCase(),
+      description: params.description || "Agent Marketplace Payout",
+      metadata: {
+        source: "agent_marketplace_payout",
+        transfer_id: transfer.id,
+        ...params.metadata
+      }
+    });
+
+    return { transfer, payout };
+  } catch (error) {
+    console.error("Error creating direct payout:", error);
+    throw error;
+  }
+}
+
+// Validate payout amount
+export function validatePayoutAmount(amountCents: number): { valid: boolean; error?: string } {
+  if (amountCents < 500) { // $5.00 minimum
+    return { valid: false, error: "Minimum payout amount is $5.00" };
+  }
+  
+  if (amountCents > 10000000) { // $100,000
+    return { valid: false, error: "Maximum payout amount is $100,000" };
+  }
+  
+  return { valid: true };
+}
