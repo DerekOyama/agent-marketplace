@@ -44,10 +44,13 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [showPriceEdit, setShowPriceEdit] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   const [newPrice, setNewPrice] = useState<string>(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleAction = async (action: string) => {
     if (action === 'delete-agent') {
-      await handleDeleteAgent();
+      setShowDeleteConfirm(true);
       return;
     }
     
@@ -100,13 +103,13 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   };
 
   const handleDeleteAgent = async () => {
-    const confirmText = prompt(`To delete "${agent.name}", please type the agent name exactly as shown:`);
-    
-    if (confirmText !== agent.name) {
-      alert(`Deletion cancelled. You typed "${confirmText}" but need to type "${agent.name}" exactly.`);
+    // Check if confirmation text matches agent name
+    if (deleteConfirmText !== agent.name) {
+      alert(`Please type "${agent.name}" to confirm deletion`);
       return;
     }
 
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/agents/${agent.id}/delete`, {
         method: 'DELETE',
@@ -117,11 +120,16 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
       if (result.success) {
         // Refresh the agent list
         await onAction('refresh-agent', agent.id);
+        // Reset confirmation state
+        setShowDeleteConfirm(false);
+        setDeleteConfirmText('');
       } else {
         alert(`Failed to delete agent: ${result.error}`);
       }
     } catch (error) {
       alert(`Error deleting agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -456,6 +464,64 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
                 {isUpdatingPrice ? 'Updating...' : 'Update Price'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Form */}
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg p-4 border-2 border-red-200">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-red-800">⚠️ Delete Agent</h4>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmText('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-sm text-red-700">
+              This will permanently delete <strong>&quot;{agent.name}&quot;</strong> and all associated data. This action cannot be undone.
+            </p>
+            
+            <div>
+              <label className="block text-sm font-medium text-red-700 mb-1">
+                Type the agent name to confirm deletion:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={`Type "${agent.name}" here`}
+                className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder-gray-500 text-sm"
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <button
+                onClick={handleDeleteAgent}
+                disabled={isDeleting || deleteConfirmText !== agent.name}
+                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Agent'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmText('');
+                }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                Cancel
               </button>
             </div>
           </div>

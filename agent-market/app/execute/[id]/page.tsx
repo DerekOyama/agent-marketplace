@@ -68,9 +68,53 @@ export default function ExecuteAgentPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  const parseInputRequirements = (_requirements: string): InputField[] => {
-    // For now, we'll create a simple text field
-    // Later this can be enhanced to parse complex JSON schemas
+  const parseInputRequirements = (requirements: string): InputField[] => {
+    try {
+      // Try to parse as JSON schema
+      const schema = JSON.parse(requirements);
+      
+      if (schema && schema.properties && typeof schema.properties === 'object') {
+        const fields: InputField[] = [];
+        const properties = schema.properties as Record<string, unknown>;
+        const required = (schema.required as string[]) || [];
+        
+        for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+          const field = fieldSchema as Record<string, unknown>;
+          const fieldType = field.type as string;
+          
+          // Map JSON schema types to HTML input types
+          let inputType = 'text';
+          if (fieldType === 'string') {
+            if (field.format === 'email') inputType = 'email';
+            else if (field.format === 'uri') inputType = 'url';
+            else if (field.maxLength && (field.maxLength as number) > 100) inputType = 'textarea';
+            else inputType = 'text';
+          } else if (fieldType === 'number' || fieldType === 'integer') {
+            inputType = 'number';
+          } else if (fieldType === 'boolean') {
+            inputType = 'checkbox';
+          }
+          
+          fields.push({
+            name: fieldName,
+            type: inputType as 'text' | 'textarea' | 'email' | 'url' | 'number' | 'checkbox',
+            required: required.includes(fieldName),
+            description: (field.description as string) || `Enter ${fieldName}`,
+            example: (field.example as string) || generateExampleValue(fieldName, fieldType)
+          });
+        }
+        
+        return fields.length > 0 ? fields : getDefaultFields();
+      }
+    } catch (error) {
+      console.log('Could not parse requirements as JSON schema, using default fields');
+    }
+    
+    // Fallback to default fields
+    return getDefaultFields();
+  };
+
+  const getDefaultFields = (): InputField[] => {
     return [
       {
         name: 'text',
@@ -80,6 +124,23 @@ export default function ExecuteAgentPage() {
         example: 'Hello from the agent marketplace!'
       }
     ];
+  };
+
+  const generateExampleValue = (fieldName: string, fieldType: string): string => {
+    if (fieldType === 'string') {
+      if (fieldName.toLowerCase().includes('email')) return 'test@example.com';
+      if (fieldName.toLowerCase().includes('url')) return 'https://example.com';
+      if (fieldName.toLowerCase().includes('name')) return 'John Doe';
+      if (fieldName.toLowerCase().includes('message') || fieldName.toLowerCase().includes('text')) {
+        return 'Hello from the agent marketplace!';
+      }
+      return `Sample ${fieldName}`;
+    } else if (fieldType === 'number' || fieldType === 'integer') {
+      return '42';
+    } else if (fieldType === 'boolean') {
+      return 'true';
+    }
+    return `Sample ${fieldName}`;
   };
 
   const simplifyExampleInput = (example: unknown): string => {
@@ -287,13 +348,44 @@ export default function ExecuteAgentPage() {
     return isOwner() || isAdmin();
   };
 
+  const generateTestData = (fields: InputField[]): Record<string, string> => {
+    const testData: Record<string, string> = {};
+    
+    for (const field of fields) {
+      // Use existing form data if available and not empty
+      if (formData[field.name]?.trim()) {
+        testData[field.name] = formData[field.name];
+      } else {
+        // Generate appropriate test data based on field type and example
+        if (field.example) {
+          testData[field.name] = field.example;
+        } else if (field.type === 'textarea') {
+          testData[field.name] = `Test ${field.name} input for admin testing`;
+        } else if (field.type === 'email') {
+          testData[field.name] = 'test@example.com';
+        } else if (field.type === 'number') {
+          testData[field.name] = '42';
+        } else if (field.type === 'url') {
+          testData[field.name] = 'https://example.com';
+        } else {
+          testData[field.name] = `Test ${field.name}`;
+        }
+      }
+    }
+    
+    return testData;
+  };
+
   const handleTestAgent = async () => {
     if (!agent) return;
 
     setIsTesting(true);
     try {
-      // Use the text input from the form, or auto-fill with default if empty
-      const testInput = formData.text?.trim() || "Test input from admin";
+      // Generate test data for all input fields
+      const testData = generateTestData(inputFields);
+      
+      // Format the test data according to agent specifications
+      const formattedTestData = formatInputForAgent(testData);
       
       const response = await fetch('/api/execute', {
         method: 'POST',
@@ -302,30 +394,33 @@ export default function ExecuteAgentPage() {
         },
         body: JSON.stringify({
           agentId: agent.id,
-          data: { text: testInput }
+          data: formattedTestData
         }),
       });
 
       const result = await response.json();
       
       if (result.success) {
-        setTestResult(`✅ Test successful! Input: "${testInput}" → Output: ${JSON.stringify(result.result, null, 2)}`);
+        const inputSummary = Object.entries(testData)
+          .map(([key, value]) => `${key}: "${value}"`)
+          .join(', ');
+        setTestResult(`✅ Test successful! Input: {${inputSummary}} → Output: ${JSON.stringify(result.result, null, 2)}`);
       } else {
         setTestResult(`❌ Test failed: ${result.message || result.error || 'Unknown error'}`);
       }
       setShowTestNotification(true);
       
-      // Auto-hide notification after 10 seconds
+      // Auto-hide notification after 12 seconds (longer for more complex data)
       setTimeout(() => {
         setShowTestNotification(false);
-      }, 10000);
+      }, 12000);
     } catch (err) {
       setTestResult(`❌ Test error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setShowTestNotification(true);
       
       setTimeout(() => {
         setShowTestNotification(false);
-      }, 10000);
+      }, 12000);
     } finally {
       setIsTesting(false);
     }
