@@ -46,7 +46,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   const [newPrice, setNewPrice] = useState<string>(((agent.pricePerExecutionCents || 0) / 100).toFixed(2));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Update newPrice when agent prop changes (after refresh)
@@ -109,12 +108,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
   };
 
   const handleDeleteAgent = async () => {
-    // Check if confirmation text matches agent name
-    if (deleteConfirmText !== agent.name) {
-      alert(`Please type "${agent.name}" to confirm deletion`);
-      return;
-    }
-
     setIsDeleting(true);
     try {
       console.log('Attempting to delete agent:', agent.id, agent.name);
@@ -131,7 +124,6 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
         await onAction('refresh-agent', agent.id);
         // Reset confirmation state
         setShowDeleteConfirm(false);
-        setDeleteConfirmText('');
       } else {
         alert(`Failed to delete agent: ${result.error || result.message || 'Unknown error'}`);
       }
@@ -517,10 +509,7 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-red-800">⚠️ Delete Agent</h4>
               <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setDeleteConfirmText('');
-                }}
+                onClick={() => setShowDeleteConfirm(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -530,36 +519,21 @@ export default function AgentCard({ agent, onAction, loading, log, debugEnabled 
             </div>
             
             <p className="text-sm text-red-700">
-              This will permanently delete <strong>&quot;{agent.name}&quot;</strong> and all associated data. This action cannot be undone.
+              Are you sure you want to delete <strong>&quot;{agent.name}&quot;</strong>? This will mark it as deleted and hide it from users. This action can be undone by an admin.
             </p>
-            
-            <div>
-              <label className="block text-sm font-medium text-red-700 mb-1">
-                Type the agent name to confirm deletion:
-              </label>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder={`Type "${agent.name}" here`}
-                className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder-gray-500 text-sm"
-              />
-            </div>
             
             <div className="flex space-x-2">
               <button
                 onClick={handleDeleteAgent}
-                disabled={isDeleting || deleteConfirmText !== agent.name}
+                disabled={isDeleting}
                 className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               >
-                {isDeleting ? 'Deleting...' : 'Delete Agent'}
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Agent'}
               </button>
               <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setDeleteConfirmText('');
-                }}
+                onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                disabled={isDeleting}
               >
                 Cancel
               </button>

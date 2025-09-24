@@ -7,11 +7,14 @@ import { prisma } from "../../../../../lib/prisma";
  */
 export const GET = withAuth(async (req: NextRequest, userId: string) => {
   try {
+    const url = new URL(req.url);
+    const showDeleted = url.searchParams.get('showDeleted') === 'true';
+    
     // Get user's agents with their execution data
     const agents = await prisma.agent.findMany({
       where: {
         ownerId: userId,
-        isDeleted: false
+        ...(showDeleted ? {} : { isDeleted: false })
       },
       include: {
         executions: {
@@ -52,6 +55,7 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
         creatorEarningsCents,
         lastExecutionAt,
         isActive: agent.isActive,
+        isDeleted: agent.isDeleted,
         formatted: {
           totalRevenue: `$${(totalRevenueCents / 100).toFixed(2)}`,
           platformFee: `$${(platformFeeCents / 100).toFixed(2)}`,

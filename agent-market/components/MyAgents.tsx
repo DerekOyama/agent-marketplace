@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface AgentRevenue {
   id: string;
@@ -12,6 +12,7 @@ interface AgentRevenue {
   creatorEarningsCents: number;
   lastExecutionAt: string | null;
   isActive: boolean;
+  isDeleted: boolean;
   formatted: {
     totalRevenue: string;
     platformFee: string;
@@ -28,11 +29,12 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
   const [agents, setAgents] = useState<AgentRevenue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  const fetchMyAgents = async () => {
+  const fetchMyAgents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/agents/mine/revenue");
+      const response = await fetch(`/api/agents/mine/revenue?showDeleted=${showDeleted}`);
       const data = await response.json();
 
       console.log("MyAgents fetch response:", data); // Debug log
@@ -49,11 +51,11 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showDeleted]);
 
   useEffect(() => {
     fetchMyAgents();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, showDeleted, fetchMyAgents]);
 
   const formatAmount = (cents: number) => {
     return (cents / 100).toFixed(2);
@@ -109,12 +111,23 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
     <div className="bg-white rounded-lg border border-gray-300 shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900">My Agents</h3>
-        <button
-          onClick={fetchMyAgents}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Show Deleted
+          </label>
+          <button
+            onClick={fetchMyAgents}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {agents.length === 0 ? (
@@ -135,9 +148,10 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-semibold text-gray-900">{agent.name}</h4>
                     <span className={`text-xs px-2 py-1 rounded-full ${
+                      agent.isDeleted ? 'bg-gray-100 text-gray-800' : 
                       agent.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {getStatusText(agent.isActive)}
+                      {agent.isDeleted ? 'Deleted' : getStatusText(agent.isActive)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{agent.description}</p>
@@ -147,7 +161,7 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
                     {agent.totalExecutions}
@@ -175,6 +189,13 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
                   </div>
                   <div className="text-xs text-gray-600">Your Earnings (90%)</div>
                 </div>
+                
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-600">
+                    ${formatAmount(agent.creatorEarningsCents / Math.max(agent.totalExecutions, 1))}
+                  </div>
+                  <div className="text-xs text-gray-600">Profit per Execution</div>
+                </div>
               </div>
 
               {agent.totalExecutions > 0 && (
@@ -200,7 +221,7 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
 
       {agents.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">
                 {agents.reduce((sum, agent) => sum + agent.totalExecutions, 0)}
@@ -227,6 +248,13 @@ export default function MyAgents({ refreshTrigger }: MyAgentsProps) {
                 ${formatAmount(agents.reduce((sum, agent) => sum + agent.creatorEarningsCents, 0))}
               </div>
               <div className="text-xs text-gray-600">Your Total Earnings</div>
+            </div>
+            
+            <div>
+              <div className="text-xl font-bold text-purple-600">
+                ${formatAmount(agents.reduce((sum, agent) => sum + agent.creatorEarningsCents, 0) / Math.max(agents.reduce((sum, agent) => sum + agent.totalExecutions, 0), 1))}
+              </div>
+              <div className="text-xs text-gray-600">Avg Profit per Execution</div>
             </div>
           </div>
         </div>
