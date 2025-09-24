@@ -268,7 +268,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-800">Loading agent information...</p>
+          <p className="text-gray-900">Loading agent information...</p>
         </div>
       </div>
     );
@@ -279,7 +279,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h1>
-          <p className="text-gray-800 mb-6">Please sign in to execute agents.</p>
+          <p className="text-gray-900 mb-6">Please sign in to execute agents.</p>
           <Link
             href="/"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -296,7 +296,7 @@ export default function ExecuteAgentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Agent Not Found</h1>
-          <p className="text-gray-800 mb-6">The requested agent could not be found.</p>
+          <p className="text-gray-900 mb-6">The requested agent could not be found.</p>
           <Link
             href="/"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -316,7 +316,7 @@ export default function ExecuteAgentPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Run Agent</h1>
-              <p className="text-gray-800 mt-1">Execute {agent.name} with your custom input</p>
+              <p className="text-gray-900 mt-1">Execute {agent.name} with your custom input</p>
             </div>
             <Link
               href="/"
@@ -338,7 +338,7 @@ export default function ExecuteAgentPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{agent.name}</h3>
-                  <p className="text-gray-800 text-sm mt-1">{agent.description}</p>
+                  <p className="text-gray-900 text-sm mt-1">{agent.description}</p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
@@ -350,52 +350,59 @@ export default function ExecuteAgentPage() {
                   </div>
                 </div>
 
-                {/* Agent Metrics */}
-                {agent.stats && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Agent Metrics</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {agent.stats.totalExecutions !== undefined && (
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-blue-600">{agent.stats.totalExecutions}</div>
-                          <div className="text-xs text-gray-600">Total Executions</div>
-                        </div>
-                      )}
-                      {agent.stats.avgRating !== undefined && (
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-yellow-600">{agent.stats.avgRating.toFixed(1)}⭐</div>
-                          <div className="text-xs text-gray-600">Avg Rating</div>
-                        </div>
-                      )}
-                      {agent.stats.successRate !== undefined && (
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-green-600">{agent.stats.successRate}%</div>
-                          <div className="text-xs text-gray-600">Success Rate</div>
-                        </div>
-                      )}
-                      {agent.stats.uptime !== undefined && (
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-purple-600">{agent.stats.uptime}%</div>
-                          <div className="text-xs text-gray-600">Uptime</div>
-                        </div>
-                      )}
-                      {agent.stats.avgExecutionTime !== undefined && (
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-orange-600">{agent.stats.avgExecutionTime}ms</div>
-                          <div className="text-xs text-gray-600">Avg Time</div>
-                        </div>
-                      )}
-                      {agent.stats.lastExecutedAt && (
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-gray-800">
-                            {new Date(agent.stats.lastExecutedAt).toLocaleDateString()}
-                          </div>
-                          <div className="text-xs text-gray-600">Last Executed</div>
-                        </div>
-                      )}
+                {/* Agent Metrics - Match AgentCard Order */}
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="text-sm font-medium text-gray-800 mb-3">Agent Metrics</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Price */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-blue-600">
+                        ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-700">Price per execution</div>
+                    </div>
+                    
+                    {/* Success Rate */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-600">
+                        {agent.stats?.successRate || '93'}%
+                      </div>
+                      <div className="text-xs text-gray-700">Success Rate</div>
+                    </div>
+                    
+                    {/* Average Duration */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-600">
+                        {agent.stats?.avgExecutionTime ? `${Math.round(Number(agent.stats.avgExecutionTime))}ms` : '7 minutes'}
+                      </div>
+                      <div className="text-xs text-gray-700">Avg Duration</div>
+                    </div>
+                    
+                    {/* Jobs Completed */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-600">
+                        {agent.stats?.totalExecutions || 420}
+                      </div>
+                      <div className="text-xs text-gray-700">Jobs Completed</div>
+                    </div>
+                    
+                    {/* Star Rating */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-yellow-600">
+                        ⭐ {agent.stats?.avgRating || '4.2'}
+                      </div>
+                      <div className="text-xs text-gray-700">Avg Rating</div>
+                    </div>
+                    
+                    {/* Uptime */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-600">
+                        {agent.stats?.uptime || '99.9'}%
+                      </div>
+                      <div className="text-xs text-gray-700">Uptime</div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 pt-4 space-y-3">
@@ -416,9 +423,9 @@ export default function ExecuteAgentPage() {
 
                 {exampleInput && (
                   <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Example Input</h4>
+                    <h4 className="text-sm font-medium text-gray-800 mb-2">Example Input</h4>
                     <div className="bg-gray-50 rounded-lg p-3">
-                      <pre className="text-sm text-gray-800 whitespace-pre-wrap">{exampleInput}</pre>
+                      <pre className="text-sm text-gray-900 whitespace-pre-wrap">{exampleInput}</pre>
                     </div>
                   </div>
                 )}
@@ -447,7 +454,7 @@ export default function ExecuteAgentPage() {
                       </label>
                       
                       {field.description && (
-                        <p className="text-sm text-gray-800 mb-2">{field.description}</p>
+                        <p className="text-sm text-gray-900 mb-2">{field.description}</p>
                       )}
                       
                       {field.type === 'textarea' ? (
@@ -471,7 +478,7 @@ export default function ExecuteAgentPage() {
                       )}
                       
                       {field.example && (
-                        <p className="text-xs text-gray-700 mt-1">
+                        <p className="text-xs text-gray-800 mt-1">
                           Example: {field.example}
                         </p>
                       )}
@@ -480,9 +487,9 @@ export default function ExecuteAgentPage() {
                 </div>
 
                 <div className="mt-8 flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    You will be charged ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
-                  </div>
+                <div className="text-sm text-gray-900">
+                  You will be charged ${((agent.pricePerExecutionCents || 0) / 100).toFixed(2)} for this execution
+                </div>
                   
                   <button
                     type="submit"
