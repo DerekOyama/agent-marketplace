@@ -110,9 +110,9 @@ export default function Home() {
     // Apply status filter
     if (filterBy !== "all") {
       if (filterBy === "active") {
-        filtered = filtered.filter(agent => agent.isActive && !agent.isDeleted);
+        filtered = filtered.filter(agent => agent.isActive && (!agent.isDeleted || showDeletedAgents));
       } else if (filterBy === "hidden") {
-        filtered = filtered.filter(agent => agent.isHidden && !agent.isDeleted);
+        filtered = filtered.filter(agent => agent.isHidden && (!agent.isDeleted || showDeletedAgents));
       } else if (filterBy === "deleted") {
         filtered = filtered.filter(agent => agent.isDeleted);
       }
@@ -139,7 +139,7 @@ export default function Home() {
     });
 
     return sorted;
-  }, [agents, searchQuery, sortBy, filterBy]);
+  }, [agents, searchQuery, sortBy, filterBy, showDeletedAgents]);
 
   useEffect(() => {
     // Hydrate from cache for fast first paint
