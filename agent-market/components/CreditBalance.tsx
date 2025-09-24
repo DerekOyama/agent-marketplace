@@ -33,10 +33,10 @@ export default function CreditBalance({ onBalanceUpdate, refreshTrigger }: Credi
         // Not signed in; show default $0 without error
         setUser(null);
         try { localStorage.setItem("walletBalanceCents", String(0)); } catch {}
-      } else if (res.ok && data.user) {
-        setUser(data.user);
-        onBalanceUpdate?.(data.user.creditBalanceCents);
-        try { localStorage.setItem("walletBalanceCents", String(data.user.creditBalanceCents)); } catch {}
+      } else if (res.ok && data.success && data.data?.user) {
+        setUser(data.data.user);
+        onBalanceUpdate?.(data.data.user.creditBalanceCents);
+        try { localStorage.setItem("walletBalanceCents", String(data.data.user.creditBalanceCents)); } catch {}
       } else {
         // For any other error, clear cache and show error
         try { localStorage.removeItem("walletBalanceCents"); } catch {}
